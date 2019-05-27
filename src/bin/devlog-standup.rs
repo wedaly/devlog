@@ -4,5 +4,4 @@ fn main() -> Result<(), Error> {
 }
 
 #[derive(Debug)]
-enum Error {
-}
+enum Error {}
