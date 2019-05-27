@@ -1,0 +1,53 @@
+LogPath(path, date)
+    for_date(repo_dir, date)
+    from_path(path)
+    date() -> &Date
+    path() -> &Path
+
+LogRepo(dir)
+    iter_paths() -> Iter<&LogPath>
+    exists(date) -> bool
+    read(date) -> Result<Vec<LogItem>>
+    create(date: &Date, items: &[LogItem]) -> Result<LogPath>
+
+LogItem enum {
+    FreeForm(string)
+    Task(LogTask)
+}
+
+LogTask struct {
+    status: LogStatus enum {
+        Incomplete,
+        Complete,
+        Blocked
+    }
+    content: String
+}
+
+Item format:
+* TODO, incomplete
++ TODO, complete
+- TODO, blocked
+
+Anything else is a comment and ignored.
+Each TODO must be a single line
+
+devlog-edit:
+    1. If today's log doesn't exist:
+        a. if yesterday's log exists, prompt to review yesterday's log
+            i. if yes, open yesterday's log in editor
+               on save, parse yesterday's log items
+        c. prompt to create today's log
+            i. if yes, create today's log (including any incomplete items from yesterday)
+            ii. if no, abort
+    2. Open today's log in editor
+
+devlog-status --format=[standup|todo|json]
+   Standup: Print yesterday/today/blocked
+   TODO format shows "doing, blocked, done" for today
+   JSON format is there for integration with other tools, custom formatting etc.
+
+Other stuff, nice to haves
+* package managers (brew, apt-get, dnf, pacman)
+* homepage, tutorials
+* syntax highlighting for the format in vim
