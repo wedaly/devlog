@@ -22,7 +22,7 @@ Status command has a parameter `--report=standup|todo` that controls the output 
 * Standup is completed items from previous and current devlog, incomplete items from current devlog
 * Todo is incomplete items from current devlog.
 
-Also a parameter `--format=text|json` that controls the output format.  Can pipe the status JSON to another program to customize, post to Slack, sync Remember the Milk, etc.
+Both devlog-tail and devlog-status accept the parameter `--format=text|json` that controls the output format.  Can pipe the status JSON to another program to customize, post to Slack, sync Remember the Milk, etc.
 
 Hooks (for stuff like JIRA/Github integration, parsing additional metadata from files, etc):
 * post-create PATH_TO_NEW_DEVLOG
@@ -31,7 +31,7 @@ Hooks (for stuff like JIRA/Github integration, parsing additional metadata from 
 * pre-rollover PATH_TO_OLD_DEVLOG
 * post-rollover PATH_TO_OLD_DEVLOG PATH_TO_NEW_DEVLOG
 
-Hooks are configured as environment variables pointing to some program to execute (bash script, python, whatever).
+Hooks are configured as environment variables pointing to some program to execute (bash script, python, whatever).  Hooks can use the provided Rust library to parse the devlog files, or implement the parser themselves (since the format is simple and documented).
 
 Other stuff, nice to haves
 * package managers (brew, apt-get, dnf, pacman)
