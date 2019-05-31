@@ -37,3 +37,6 @@ Cargo.lock
 
 # vim
 *.swp
+
+# ctags
+tags
