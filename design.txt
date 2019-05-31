@@ -3,8 +3,10 @@ Task format:
 + TODO, complete
 - TODO, blocked
 
-Anything else is a comment and ignored.
-Each TODO must be a single line
+Each task must be a single line
+Lines immediately after a task are treated as a free-form description for the task.
+Descriptions are terminated by either another task or two lines of whitespace.
+Anything else is treated as a comment and ignored.
 
 Commands:
 * devlog-edit: open latest devlog in $EDITOR, creating a new one if it doesn't exist.
@@ -16,12 +18,20 @@ Files are sequential, named by datetime of creation with millisecond precision.
 Devlog directory is in $DEVLOG_DIR, defaults to $HOME/devlogs
 Acquire a lock file to ensure that the tool doesn't race to create the new file.
 
+Status command has a parameter `--report=standup|todo` that controls the output format.
+* Standup is completed items from previous and current devlog, incomplete items from current devlog
+* Todo is incomplete items from current devlog.
+
+Also a parameter `--format=text|json` that controls the output format.  Can pipe the status JSON to another program to customize, post to Slack, sync Remember the Milk, etc.
+
 Hooks (for stuff like JIRA/Github integration, parsing additional metadata from files, etc):
 * post-create PATH_TO_NEW_DEVLOG
 * pre-edit PATH_TO_DEVLOG
 * post-edit PATH_TO_DEVLOG
 * pre-rollover PATH_TO_OLD_DEVLOG
 * post-rollover PATH_TO_OLD_DEVLOG PATH_TO_NEW_DEVLOG
+
+Hooks are configured as environment variables pointing to some program to execute (bash script, python, whatever).
 
 Other stuff, nice to haves
 * package managers (brew, apt-get, dnf, pacman)
