@@ -4,9 +4,7 @@ Task format:
 - TODO, blocked
 
 Each task must be a single line
-Lines immediately after a task are treated as a free-form description for the task.
-Descriptions are terminated by either another task or two lines of whitespace.
-Anything else is treated as a comment and ignored.
+Everything else is treated as a comment and ignored.
 
 Commands:
 * devlog-edit: open latest devlog in $EDITOR, creating a new one if it doesn't exist.
@@ -18,9 +16,9 @@ Files are sequential, named by datetime of creation with millisecond precision.
 Devlog directory is in $DEVLOG_DIR, defaults to $HOME/devlogs
 Acquire a lock file to ensure that the tool doesn't race to create the new file.
 
-Status command has a parameter `--report=standup|todo` that controls the output format.
-* Standup is completed items from previous and current devlog, incomplete items from current devlog
-* Todo is incomplete items from current devlog.
+Status command has a parameter `--history=1` that controls the number of previous
+devlog files to include in the "previous" section.  The previous section includes
+only completed tasks; the current section includes all tasks.
 
 Both devlog-tail and devlog-status accept the parameter `--format=text|json` that controls the output format.  Can pipe the status JSON to another program to customize, post to Slack, sync Remember the Milk, etc.
 
@@ -37,3 +35,4 @@ Other stuff, nice to haves
 * package managers (brew, apt-get, dnf, pacman)
 * homepage, tutorials
 * syntax highlighting for the format in vim
+* folding in vim
