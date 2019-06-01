@@ -1,4 +1,0 @@
-[ ] Print status
-[ ] Edit current
-[ ] Rollover
-[ ] Tail
