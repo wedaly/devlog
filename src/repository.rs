@@ -1,5 +1,5 @@
 use std::collections::BinaryHeap;
-use std::fs::read_dir;
+use std::fs::{read_dir, OpenOptions};
 use std::io::Error as IOError;
 use std::path::{Path, PathBuf};
 
@@ -12,6 +12,12 @@ impl LogRepository {
         LogRepository {
             dir: dir.to_path_buf(),
         }
+    }
+
+    pub fn init(&self) -> Result<PathBuf, IOError> {
+        let p = self.head_path();
+        OpenOptions::new().write(true).create_new(true).open(&p)?;
+        Ok(p)
     }
 
     pub fn list(&self) -> Result<Vec<PathBuf>, IOError> {
@@ -52,12 +58,15 @@ impl LogRepository {
         });
         Ok(latest)
     }
+
+    fn head_path(&self) -> PathBuf {
+        self.dir.join("000001")
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::OpenOptions;
     use std::io::Write;
     use tempfile::tempdir;
 

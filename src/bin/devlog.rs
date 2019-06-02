@@ -3,6 +3,7 @@ extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use devlog::config::Config;
+use devlog::editor::open_in_editor;
 use devlog::file::LogFile;
 use devlog::repository::LogRepository;
 use devlog::task::TaskStatus;
@@ -28,6 +29,7 @@ fn main() -> Result<(), Error> {
         )
         .subcommand(SubCommand::with_name("todo").about("Show incomplete tasks"))
         .subcommand(SubCommand::with_name("blocked").about("Show blocked tasks"))
+        .subcommand(SubCommand::with_name("edit").about("Edit the most recent devlog file"))
         .get_matches();
 
     let mut w = stdout();
@@ -35,6 +37,7 @@ fn main() -> Result<(), Error> {
         ("done", Some(m)) => done_cmd(&mut w, m),
         ("todo", Some(_)) => todo_cmd(&mut w),
         ("blocked", Some(_)) => blocked_cmd(&mut w),
+        ("edit", Some(_)) => edit_cmd(&mut w),
         _ => panic!("No subcommand"),
     }
 }
@@ -87,6 +90,17 @@ fn blocked_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
         }
     }
     Ok(())
+}
+
+fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+    let r = repo();
+    match r.latest()? {
+        Some(path) => open_in_editor(w, &path).map_err(From::from),
+        None => r
+            .init()
+            .and_then(|path| open_in_editor(w, &path))
+            .map_err(From::from),
+    }
 }
 
 #[derive(Debug)]
