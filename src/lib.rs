@@ -6,6 +6,7 @@ mod header;
 pub mod path;
 pub mod repository;
 pub mod rollover;
+pub mod status;
 pub mod task;
 
 pub use config::Config;

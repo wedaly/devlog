@@ -1,9 +1,9 @@
 use crate::error::Error;
 use crate::file::LogFile;
+use crate::header::write_header;
 use crate::path::LogPath;
 use crate::repository::LogRepository;
 use crate::task::{Task, TaskStatus};
-use crate::header::write_header;
 use std::fs::OpenOptions;
 use std::io::Write;
 

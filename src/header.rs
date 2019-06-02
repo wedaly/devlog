@@ -16,9 +16,7 @@ To edit this devlog:
    devlog edit
 
 To quickly view tasks:
-   devlog todo
-   devlog blocked
-   devlog done
+   devlog status
 
 To rollover incomplete and blocked tasks to a fresh devlog:
    devlog rollover
