@@ -8,12 +8,23 @@ use std::io::{copy, stdout, Write};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+const MAIN_INFO: &'static str =
+    "Devlog files are created in the directory at $DEVLOG_HOME, which defaults to $HOME/devlogs if not set.";
+
+const EDIT_INFO: &'static str =
+    "Uses the editor program $DEVLOG_EDITOR, which defaults to nano if not set.";
+
 fn main() -> Result<(), Error> {
     let m = App::new("devlog")
         .about("Track daily development work")
+        .after_help(MAIN_INFO)
         .version(VERSION)
         .setting(AppSettings::ArgRequiredElseHelp)
-        .subcommand(SubCommand::with_name("edit").about("Edit the most recent devlog file"))
+        .subcommand(
+            SubCommand::with_name("edit")
+                .about("Edit the most recent devlog file")
+                .after_help(EDIT_INFO),
+        )
         .subcommand(
             SubCommand::with_name("rollover")
                 .about("Create new devlog file with incomplete and blocked tasks"),
