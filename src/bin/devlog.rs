@@ -3,7 +3,7 @@ extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use devlog::{editor, rollover, Config, Error, LogFile, LogRepository, TaskStatus};
-use std::fs::File;
+use std::fs::{File, create_dir_all};
 use std::io::{copy, stdout, Write};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -52,9 +52,12 @@ fn main() -> Result<(), Error> {
     }
 }
 
-fn repo() -> LogRepository {
+fn repo() -> Result<LogRepository, Error> {
     let config = Config::load();
-    LogRepository::new(config.repo_dir())
+    let repo_dir = config.repo_dir();
+    create_dir_all(&repo_dir)?;
+    let repo = LogRepository::new(config.repo_dir());
+    Ok(repo)
 }
 
 fn parse_limit_arg(m: &ArgMatches) -> Result<usize, Error> {
@@ -72,7 +75,7 @@ fn parse_limit_arg(m: &ArgMatches) -> Result<usize, Error> {
 
 fn done_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let limit = parse_limit_arg(m)?;
-    for logpath in repo().tail(limit)? {
+    for logpath in repo()?.tail(limit)? {
         let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Completed = t.status() {
@@ -84,7 +87,7 @@ fn done_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
 }
 
 fn todo_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    if let Some(logpath) = repo().latest()? {
+    if let Some(logpath) = repo()?.latest()? {
         let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Incomplete = t.status() {
@@ -96,7 +99,7 @@ fn todo_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 }
 
 fn blocked_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    if let Some(logpath) = repo().latest()? {
+    if let Some(logpath) = repo()?.latest()? {
         let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Blocked = t.status() {
@@ -108,7 +111,7 @@ fn blocked_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 }
 
 fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    let r = repo();
+    let r = repo()?;
     match r.latest()? {
         Some(logpath) => editor::open(w, logpath.path()),
         None => r.init().and_then(|logpath| editor::open(w, logpath.path())),
@@ -116,14 +119,14 @@ fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 }
 
 fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    let (logpath, count) = rollover::rollover(&repo())?;
+    let (logpath, count) = rollover::rollover(&repo()?)?;
     write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
     Ok(())
 }
 
 fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let limit = parse_limit_arg(m)?;
-    let paths = repo().tail(limit)?;
+    let paths = repo()?.tail(limit)?;
     for (i, logpath) in paths.iter().enumerate() {
         if i > 0 {
             write!(w, "\n----------------------\n")?;
