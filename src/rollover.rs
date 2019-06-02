@@ -3,6 +3,7 @@ use crate::file::LogFile;
 use crate::path::LogPath;
 use crate::repository::LogRepository;
 use crate::task::{Task, TaskStatus};
+use crate::header::write_header;
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -20,6 +21,8 @@ fn rollover_from(p: LogPath) -> Result<(LogPath, usize), Error> {
         .write(true)
         .create_new(true)
         .open(next.path())?;
+
+    write_header(&mut f, false)?;
 
     for t in tasks.iter() {
         write!(f, "{}\n", t)?;
