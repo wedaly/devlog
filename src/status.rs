@@ -8,16 +8,14 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
     let mut todo = Vec::new();
     let mut blocked = Vec::new();
     let mut done = Vec::new();
-    let paths = repo.tail(2)?;
 
-    for (i, logpath) in paths.iter().enumerate() {
+    if let Some(logpath) = repo.latest()? {
         let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             match t.status() {
-                TaskStatus::Incomplete if i == 0 => todo.push(t.clone()),
-                TaskStatus::Blocked if i == 0 => blocked.push(t.clone()),
+                TaskStatus::Incomplete => todo.push(t.clone()),
+                TaskStatus::Blocked => blocked.push(t.clone()),
                 TaskStatus::Completed => done.push(t.clone()),
-                _ => {}
             }
         }
     }
