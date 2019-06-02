@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::header::write_header;
 use crate::path::LogPath;
 use std::collections::BinaryHeap;
 use std::fs::{read_dir, OpenOptions};
@@ -17,10 +18,11 @@ impl LogRepository {
 
     pub fn init(&self) -> Result<LogPath, Error> {
         let p = LogPath::new(&self.dir, 1);
-        OpenOptions::new()
+        let mut f = OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(p.path())?;
+        write_header(&mut f, true)?;
         Ok(p)
     }
 

@@ -5,6 +5,7 @@ authors = ["Will Daly <will.e.daly@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+chrono = "0.4.6"
 clap = "2.33.0"
 dirs = "1.0"
 tempfile = "3"
