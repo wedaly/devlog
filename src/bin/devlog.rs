@@ -6,6 +6,8 @@ use devlog::{editor, rollover, Config, Error, LogFile, LogRepository, TaskStatus
 use std::fs::File;
 use std::io::{copy, stdout, Write};
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 fn main() -> Result<(), Error> {
     let limit_arg = Arg::with_name("limit")
         .short("n")
@@ -17,6 +19,7 @@ fn main() -> Result<(), Error> {
 
     let m = App::new("devlog")
         .about("Track daily development work")
+        .version(VERSION)
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("tail")
