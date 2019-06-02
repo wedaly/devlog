@@ -28,9 +28,9 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
     } else {
         write!(w, "[empty]")?;
     }
-    write!(w, "\n")?;
 
     if blocked.len() > 0 {
+        write!(w, "\n")?;
         write!(w, "Blocked:\n")?;
         for t in blocked.iter() {
             write!(w, "{}\n", t)?;
@@ -39,6 +39,7 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
     }
 
     if done.len() > 0 {
+        write!(w, "\n")?;
         write!(w, "Done:\n")?;
         for t in done.iter() {
             write!(w, "{}\n", t)?;
