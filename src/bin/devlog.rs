@@ -2,12 +2,7 @@ extern crate clap;
 extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use devlog::config::Config;
-use devlog::editor::open_in_editor;
-use devlog::file::LogFile;
-use devlog::repository::LogRepository;
-use devlog::task::TaskStatus;
-use std::io::Error as IOError;
+use devlog::{editor, rollover, Config, Error, LogFile, LogRepository, TaskStatus};
 use std::io::{stdout, Write};
 
 fn main() -> Result<(), Error> {
@@ -30,6 +25,10 @@ fn main() -> Result<(), Error> {
         .subcommand(SubCommand::with_name("todo").about("Show incomplete tasks"))
         .subcommand(SubCommand::with_name("blocked").about("Show blocked tasks"))
         .subcommand(SubCommand::with_name("edit").about("Edit the most recent devlog file"))
+        .subcommand(
+            SubCommand::with_name("rollover")
+                .about("Create new devlog file with incomplete and blocked tasks"),
+        )
         .get_matches();
 
     let mut w = stdout();
@@ -38,6 +37,7 @@ fn main() -> Result<(), Error> {
         ("todo", Some(_)) => todo_cmd(&mut w),
         ("blocked", Some(_)) => blocked_cmd(&mut w),
         ("edit", Some(_)) => edit_cmd(&mut w),
+        ("rollover", Some(_)) => rollover_cmd(&mut w),
         _ => panic!("No subcommand"),
     }
 }
@@ -57,8 +57,8 @@ fn done_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
         return Err(Error::InvalidArgError("limit must be >= 1"));
     }
 
-    for path in repo().tail(limit)? {
-        let f = LogFile::load(&path)?;
+    for logpath in repo().tail(limit)? {
+        let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Completed = t.status() {
                 write!(w, "{}\n", t)?;
@@ -69,8 +69,8 @@ fn done_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
 }
 
 fn todo_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    if let Some(path) = repo().latest()? {
-        let f = LogFile::load(&path)?;
+    if let Some(logpath) = repo().latest()? {
+        let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Incomplete = t.status() {
                 write!(w, "{}\n", t)?;
@@ -81,8 +81,8 @@ fn todo_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 }
 
 fn blocked_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
-    if let Some(path) = repo().latest()? {
-        let f = LogFile::load(&path)?;
+    if let Some(logpath) = repo().latest()? {
+        let f = LogFile::load(logpath.path())?;
         for t in f.tasks() {
             if let TaskStatus::Blocked = t.status() {
                 write!(w, "{}\n", t)?;
@@ -95,22 +95,13 @@ fn blocked_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let r = repo();
     match r.latest()? {
-        Some(path) => open_in_editor(w, &path).map_err(From::from),
-        None => r
-            .init()
-            .and_then(|path| open_in_editor(w, &path))
-            .map_err(From::from),
+        Some(logpath) => editor::open(w, logpath.path()),
+        None => r.init().and_then(|logpath| editor::open(w, logpath.path())),
     }
 }
 
-#[derive(Debug)]
-enum Error {
-    InvalidArgError(&'static str),
-    IOError(IOError),
-}
-
-impl From<IOError> for Error {
-    fn from(err: IOError) -> Error {
-        Error::IOError(err)
-    }
+fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+    let (logpath, count) = rollover::rollover(&repo())?;
+    write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
+    Ok(())
 }

@@ -1,6 +1,7 @@
+use crate::error::Error;
+use crate::path::LogPath;
 use std::collections::BinaryHeap;
 use std::fs::{read_dir, OpenOptions};
-use std::io::Error as IOError;
 use std::path::{Path, PathBuf};
 
 pub struct LogRepository {
@@ -14,21 +15,24 @@ impl LogRepository {
         }
     }
 
-    pub fn init(&self) -> Result<PathBuf, IOError> {
-        let p = self.head_path();
-        OpenOptions::new().write(true).create_new(true).open(&p)?;
+    pub fn init(&self) -> Result<LogPath, Error> {
+        let p = LogPath::new(&self.dir, 1);
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(p.path())?;
         Ok(p)
     }
 
-    pub fn list(&self) -> Result<Vec<PathBuf>, IOError> {
+    pub fn list(&self) -> Result<Vec<LogPath>, Error> {
         let entries = read_dir(&self.dir)?;
-        let files: Vec<PathBuf> = entries
-            .filter_map(|entry_result| entry_result.map(|e| e.path()).ok())
+        let paths: Vec<LogPath> = entries
+            .filter_map(|entry_result| entry_result.ok().and_then(|e| LogPath::from_path(e.path())))
             .collect();
-        Ok(files)
+        Ok(paths)
     }
 
-    pub fn tail(&self, limit: usize) -> Result<Vec<PathBuf>, IOError> {
+    pub fn tail(&self, limit: usize) -> Result<Vec<LogPath>, Error> {
         let mut all = self.list()?;
         let mut heap = BinaryHeap::with_capacity(all.len());
         all.drain(..).for_each(|p| heap.push(p));
@@ -44,23 +48,19 @@ impl LogRepository {
         return Ok(result);
     }
 
-    pub fn latest(&self) -> Result<Option<PathBuf>, IOError> {
+    pub fn latest(&self) -> Result<Option<LogPath>, Error> {
         let mut all = self.list()?;
         let latest = all.drain(..).fold(None, |acc, p| match acc {
             None => Some(p),
-            Some(x) => {
-                if p > x {
+            Some(q) => {
+                if p > q {
                     Some(p)
                 } else {
-                    Some(x)
+                    Some(q)
                 }
             }
         });
         Ok(latest)
-    }
-
-    fn head_path(&self) -> PathBuf {
-        self.dir.join("000001")
     }
 }
 
@@ -70,14 +70,15 @@ mod tests {
     use std::io::Write;
     use tempfile::tempdir;
 
-    fn create_files(dir: &Path, names: &[&str]) -> Result<Vec<PathBuf>, IOError> {
+    fn create_files(dir: &Path, count: usize) -> Result<Vec<LogPath>, Error> {
         let mut paths = Vec::new();
-        for n in names.iter() {
-            let p = dir.join(n);
-            let mut f = OpenOptions::new().write(true).create(true).open(&p)?;
+        for i in 0..count {
+            let p = LogPath::new(dir, i);
+            let mut f = OpenOptions::new().write(true).create(true).open(p.path())?;
             write!(f, "+ DONE")?;
             paths.push(p);
         }
+        paths.reverse();
         Ok(paths)
     }
 
@@ -92,10 +93,10 @@ mod tests {
     #[test]
     fn test_list_dir() {
         let dir = tempdir().unwrap();
-        let files = vec!["2019-01-01", "2019-02-03"];
-        let expected = create_files(dir.path(), &files[..]).unwrap();
+        let mut expected = create_files(dir.path(), 2).unwrap();
         let repo = LogRepository::new(dir.path());
         let mut paths = repo.list().unwrap();
+        expected.sort();
         paths.sort();
         assert_eq!(paths, &expected[..]);
     }
@@ -111,10 +112,9 @@ mod tests {
     #[test]
     fn test_tail() {
         let dir = tempdir().unwrap();
-        let files = vec!["2019-04-03", "2019-03-02", "2019-02-01"];
-        let expected = create_files(dir.path(), &files[..]).unwrap();
+        let expected = create_files(dir.path(), 3).unwrap();
         let repo = LogRepository::new(dir.path());
-        for i in 0..3 {
+        for i in 0..=3 {
             let paths = repo.tail(i).unwrap();
             assert_eq!(paths, &expected[0..i]);
         }
@@ -123,8 +123,7 @@ mod tests {
     #[test]
     fn test_tail_large_limit() {
         let dir = tempdir().unwrap();
-        let files = vec!["2019-04-03", "2019-03-02", "2019-02-01"];
-        let expected = create_files(dir.path(), &files[..]).unwrap();
+        let expected = create_files(dir.path(), 3).unwrap();
         let repo = LogRepository::new(dir.path());
         let paths = repo.tail(100).unwrap();
         assert_eq!(paths, &expected[..]);
@@ -141,8 +140,7 @@ mod tests {
     #[test]
     fn test_latest() {
         let dir = tempdir().unwrap();
-        let files = vec!["2019-04-03", "2019-03-02", "2019-02-01"];
-        let paths = create_files(dir.path(), &files[..]).unwrap();
+        let paths = create_files(dir.path(), 3).unwrap();
         let repo = LogRepository::new(dir.path());
         let latest = repo.latest().unwrap();
         match latest {

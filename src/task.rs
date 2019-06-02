@@ -7,7 +7,7 @@ pub enum TaskStatus {
     Blocked,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Task {
     status: TaskStatus,
     content: String,

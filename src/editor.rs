@@ -1,13 +1,14 @@
+use crate::error::Error;
 use std::env;
-use std::io::Error as IOError;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
+const EDITOR_ENV_VAR: &'static str = "DEVLOG_EDITOR";
 const DEFAULT_EDITOR: &'static str = "nano";
 
-pub fn open_in_editor<W: Write>(w: &mut W, path: &Path) -> Result<(), IOError> {
-    let prog = env::var("DEVLOG_EDITOR").unwrap_or(DEFAULT_EDITOR.to_string());
+pub fn open<W: Write>(w: &mut W, path: &Path) -> Result<(), Error> {
+    let prog = env::var(EDITOR_ENV_VAR).unwrap_or(DEFAULT_EDITOR.to_string());
 
     let status = Command::new(&prog).arg(&path).status()?;
 
@@ -21,8 +22,9 @@ pub fn open_in_editor<W: Write>(w: &mut W, path: &Path) -> Result<(), IOError> {
                 prog,
                 path.to_string_lossy(),
                 code
-            ),
-            None => write!(w, "Process terminated by signal\n"),
+            )
+            .map_err(From::from),
+            None => write!(w, "Process terminated by signal\n").map_err(From::from),
         }
     }
 }
