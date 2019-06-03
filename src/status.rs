@@ -4,9 +4,31 @@ use crate::repository::LogRepository;
 use crate::task::{Task, TaskStatus};
 use std::io::Write;
 
-pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
+#[derive(Debug, Copy, Clone)]
+pub enum DisplayMode {
+    ShowAll,
+    ShowOnly(TaskStatus),
+}
+
+impl DisplayMode {
+    pub fn show_section_names(&self) -> bool {
+        match self {
+            DisplayMode::ShowAll => true,
+            DisplayMode::ShowOnly(_) => false,
+        }
+    }
+
+    pub fn show_status(&self, s: &TaskStatus) -> bool {
+        match self {
+            DisplayMode::ShowAll => true,
+            DisplayMode::ShowOnly(status) => s == status,
+        }
+    }
+}
+
+pub fn print<W: Write>(w: &mut W, repo: &LogRepository, d: DisplayMode) -> Result<(), Error> {
     let g = load_tasks_group_by_status(repo)?;
-    format_status_report(w, &g)
+    print_status_report(w, &g, d)
 }
 
 fn load_tasks_group_by_status(repo: &LogRepository) -> Result<GroupedTasks, Error> {
@@ -25,19 +47,18 @@ const ALL_STATUSES: &[TaskStatus] = &[
     TaskStatus::Done,
 ];
 
-fn format_status_report<W: Write>(w: &mut W, g: &GroupedTasks) -> Result<(), Error> {
+fn print_status_report<W: Write>(w: &mut W, g: &GroupedTasks, d: DisplayMode) -> Result<(), Error> {
     let mut has_prev = false;
     for status in ALL_STATUSES {
-        let tasks = g.retrieve(status);
-        if tasks.len() > 0 {
-            if has_prev {
-                write!(w, "\n")?;
+        if d.show_status(status) {
+            let tasks = g.retrieve(status);
+            if tasks.len() > 0 {
+                if has_prev {
+                    write!(w, "\n")?;
+                }
+                print_section(w, status, tasks, d)?;
+                has_prev = true;
             }
-            write!(w, "{}:\n", status.display_name())?;
-            for t in tasks {
-                write!(w, "{}\n", t)?;
-            }
-            has_prev = true;
         }
     }
 
@@ -45,6 +66,21 @@ fn format_status_report<W: Write>(w: &mut W, g: &GroupedTasks) -> Result<(), Err
         write!(w, "[no tasks]\n")?;
     }
 
+    Ok(())
+}
+
+fn print_section<W: Write>(
+    w: &mut W,
+    status: &TaskStatus,
+    tasks: &[Task],
+    d: DisplayMode,
+) -> Result<(), Error> {
+    if d.show_section_names() {
+        write!(w, "{}:\n", status.display_name())?;
+    }
+    for t in tasks {
+        write!(w, "{}\n", t)?;
+    }
     Ok(())
 }
 
@@ -93,7 +129,7 @@ mod tests {
     use std::str;
     use tempfile::tempdir;
 
-    fn check_status(input_tasks: Vec<Task>, expected_status: &str) {
+    fn check_status(input_tasks: Vec<Task>, display_mode: DisplayMode, expected_status: &str) {
         let dir = tempdir().unwrap();
         let repo = LogRepository::new(dir.path());
         let logpath = repo.init().unwrap();
@@ -108,14 +144,14 @@ mod tests {
         }
 
         let mut buf = Vec::new();
-        print(&mut buf, &repo).unwrap();
+        print(&mut buf, &repo, display_mode).unwrap();
         let actual_status = str::from_utf8(&buf).unwrap();
         assert_eq!(actual_status, expected_status);
     }
 
     #[test]
     fn test_status_no_tasks() {
-        check_status(vec![], "[no tasks]\n");
+        check_status(vec![], DisplayMode::ShowAll, "[no tasks]\n");
     }
 
     #[test]
@@ -124,7 +160,7 @@ mod tests {
             Task::new(TaskStatus::ToDo, "Foo"),
             Task::new(TaskStatus::ToDo, "Bar"),
         ];
-        check_status(tasks, "To Do:\n* Foo\n* Bar\n");
+        check_status(tasks, DisplayMode::ShowAll, "To Do:\n* Foo\n* Bar\n");
     }
 
     #[test]
@@ -133,7 +169,7 @@ mod tests {
             Task::new(TaskStatus::Started, "Foo"),
             Task::new(TaskStatus::Started, "Bar"),
         ];
-        check_status(tasks, "In Progress:\n^ Foo\n^ Bar\n")
+        check_status(tasks, DisplayMode::ShowAll, "In Progress:\n^ Foo\n^ Bar\n")
     }
 
     #[test]
@@ -142,7 +178,7 @@ mod tests {
             Task::new(TaskStatus::Blocked, "Foo"),
             Task::new(TaskStatus::Blocked, "Bar"),
         ];
-        check_status(tasks, "Blocked:\n- Foo\n- Bar\n");
+        check_status(tasks, DisplayMode::ShowAll, "Blocked:\n- Foo\n- Bar\n");
     }
 
     #[test]
@@ -151,7 +187,7 @@ mod tests {
             Task::new(TaskStatus::Done, "Foo"),
             Task::new(TaskStatus::Done, "Bar"),
         ];
-        check_status(tasks, "Done:\n+ Foo\n+ Bar\n");
+        check_status(tasks, DisplayMode::ShowAll, "Done:\n+ Foo\n+ Bar\n");
     }
 
     #[test]
@@ -160,7 +196,11 @@ mod tests {
             Task::new(TaskStatus::ToDo, "Foo"),
             Task::new(TaskStatus::Blocked, "Bar"),
         ];
-        check_status(tasks, "To Do:\n* Foo\n\nBlocked:\n- Bar\n");
+        check_status(
+            tasks,
+            DisplayMode::ShowAll,
+            "To Do:\n* Foo\n\nBlocked:\n- Bar\n",
+        );
     }
 
     #[test]
@@ -169,7 +209,11 @@ mod tests {
             Task::new(TaskStatus::Blocked, "Bar"),
             Task::new(TaskStatus::Done, "Baz"),
         ];
-        check_status(tasks, "Blocked:\n- Bar\n\nDone:\n+ Baz\n");
+        check_status(
+            tasks,
+            DisplayMode::ShowAll,
+            "Blocked:\n- Bar\n\nDone:\n+ Baz\n",
+        );
     }
 
     #[test]
@@ -182,7 +226,52 @@ mod tests {
         ];
         check_status(
             tasks,
+            DisplayMode::ShowAll,
             "In Progress:\n^ Bar\n\nTo Do:\n* Foo\n\nBlocked:\n- Baz\n\nDone:\n+ Boo\n",
         );
+    }
+
+    #[test]
+    fn test_show_only_todo() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::ToDo), "* Foo\n");
+    }
+
+    #[test]
+    fn test_show_only_started() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Started), "^ Bar\n");
+    }
+
+    #[test]
+    fn test_show_only_blocked() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Blocked), "- Baz\n");
+    }
+
+    #[test]
+    fn test_show_only_done() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Done), "+ Boo\n");
     }
 }

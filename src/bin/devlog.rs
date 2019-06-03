@@ -97,7 +97,7 @@ fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 fn status_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let config = Config::load();
     let r = repo(&config)?;
-    status::print(w, &r)
+    status::print(w, &r, status::DisplayMode::ShowAll) // TODO
 }
 
 fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
