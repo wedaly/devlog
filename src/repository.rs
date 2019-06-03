@@ -64,6 +64,15 @@ impl LogRepository {
         });
         Ok(latest)
     }
+
+    pub fn nth_from_latest(&self, n: usize) -> Result<Option<LogPath>, Error> {
+        let mut paths = self.tail(n + 1)?;
+        if paths.len() < n {
+            Ok(None)
+        } else {
+            Ok(paths.drain(..).nth(n))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -149,5 +158,25 @@ mod tests {
             None => assert!(false),
             Some(p) => assert_eq!(paths[0], p),
         }
+    }
+
+    #[test]
+    fn test_nth_from_latest_empty_repo() {
+        let dir = tempdir().unwrap();
+        let repo = LogRepository::new(dir.path());
+        assert!(repo.nth_from_latest(0).unwrap().is_none());
+    }
+
+    #[test]
+    fn test_nth_from_latest() {
+        let dir = tempdir().unwrap();
+        let paths = create_files(dir.path(), 3).unwrap();
+        let repo = LogRepository::new(dir.path());
+
+        assert_eq!(repo.nth_from_latest(0).unwrap().unwrap(), paths[0]);
+        assert_eq!(repo.nth_from_latest(1).unwrap().unwrap(), paths[1]);
+        assert_eq!(repo.nth_from_latest(2).unwrap().unwrap(), paths[2]);
+        assert!(repo.nth_from_latest(3).unwrap().is_none());
+        assert!(repo.nth_from_latest(4).unwrap().is_none());
     }
 }
