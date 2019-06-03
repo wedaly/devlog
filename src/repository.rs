@@ -66,11 +66,15 @@ impl LogRepository {
     }
 
     pub fn nth_from_latest(&self, n: usize) -> Result<Option<LogPath>, Error> {
-        let mut paths = self.tail(n + 1)?;
-        if paths.len() < n {
-            Ok(None)
+        if n == 0 {
+            self.latest()
         } else {
-            Ok(paths.drain(..).nth(n))
+            let mut paths = self.tail(n + 1)?;
+            if paths.len() < n {
+                Ok(None)
+            } else {
+                Ok(paths.drain(..).nth(n))
+            }
         }
     }
 }
