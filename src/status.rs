@@ -274,4 +274,60 @@ mod tests {
         ];
         check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Done), "+ Boo\n");
     }
+
+    #[test]
+    fn test_show_only_todo_no_tasks() {
+        let tasks = vec![
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(
+            tasks,
+            DisplayMode::ShowOnly(TaskStatus::ToDo),
+            "[no tasks]\n",
+        );
+    }
+
+    #[test]
+    fn test_show_only_started_no_tasks() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(
+            tasks,
+            DisplayMode::ShowOnly(TaskStatus::Started),
+            "[no tasks]\n",
+        );
+    }
+
+    #[test]
+    fn test_show_only_blocked_no_tasks() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Bar"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Done, "Boo"),
+        ];
+        check_status(
+            tasks,
+            DisplayMode::ShowOnly(TaskStatus::Blocked),
+            "[no tasks]\n",
+        );
+    }
+
+    #[test]
+    fn test_show_only_done_no_tasks() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Bar"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+        ];
+        check_status(
+            tasks,
+            DisplayMode::ShowOnly(TaskStatus::Done),
+            "[no tasks]\n",
+        );
+    }
 }
