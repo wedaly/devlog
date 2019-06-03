@@ -35,7 +35,7 @@ fn load_carryover_tasks(p: &LogPath) -> Result<Vec<Task>, Error> {
     let prev = LogFile::load(p.path())?;
     let mut tasks = Vec::new();
     prev.tasks().iter().for_each(|t| {
-        if let TaskStatus::ToDo | TaskStatus::Blocked = t.status() {
+        if let TaskStatus::ToDo | TaskStatus::Started | TaskStatus::Blocked = t.status() {
             tasks.push(t.clone());
         }
     });
@@ -73,15 +73,18 @@ mod tests {
         repo.init().unwrap();
         let first_logpath = repo.latest().unwrap().unwrap();
 
-        // Rollover, then check that only blocked/incomplete tasks
+        // Rollover, then check that only todo/started/blocked tasks
         // were imported into the new logfile
         let (new_logpath, num_imported) = rollover(&repo).unwrap();
-        assert_eq!(num_imported, 2);
+        assert_eq!(num_imported, 3);
 
         // Check tasks in the new logfile
         let logfile = LogFile::load(new_logpath.path()).unwrap();
         let task_statuses: Vec<TaskStatus> = logfile.tasks().iter().map(|t| t.status()).collect();
-        assert_eq!(task_statuses, vec![TaskStatus::ToDo, TaskStatus::Blocked]);
+        assert_eq!(
+            task_statuses,
+            vec![TaskStatus::ToDo, TaskStatus::Started, TaskStatus::Blocked]
+        );
 
         // Repo should contain two logfiles
         let mut paths = repo.list().unwrap();
