@@ -41,3 +41,54 @@ fn load_carryover_tasks(p: &LogPath) -> Result<Vec<Task>, Error> {
     });
     Ok(tasks)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_rollover_empty_repo() {
+        let dir = tempdir().unwrap();
+        let repo = LogRepository::new(dir.path());
+        let (logpath, num_imported) = rollover(&repo).unwrap();
+        assert_eq!(num_imported, 0);
+
+        // newly created logfile contains example tasks
+        let logfile = LogFile::load(logpath.path()).unwrap();
+        assert_eq!(logfile.tasks().len(), 3);
+
+        // new logfile is only one in the repo
+        let paths = repo.list().unwrap();
+        assert_eq!(paths, vec![logpath]);
+    }
+
+    #[test]
+    fn test_rollover() {
+        let dir = tempdir().unwrap();
+        let repo = LogRepository::new(dir.path());
+
+        // Initialize the repository, which creates a single
+        // logfile with three example tasks.
+        repo.init().unwrap();
+        let first_logpath = repo.latest().unwrap().unwrap();
+
+        // Rollover, then check that only blocked/incomplete tasks
+        // were imported into the new logfile
+        let (new_logpath, num_imported) = rollover(&repo).unwrap();
+        assert_eq!(num_imported, 2);
+
+        // Check tasks in the new logfile
+        let logfile = LogFile::load(new_logpath.path()).unwrap();
+        let task_statuses: Vec<TaskStatus> = logfile.tasks().iter().map(|t| t.status()).collect();
+        assert_eq!(
+            task_statuses,
+            vec![TaskStatus::Incomplete, TaskStatus::Blocked]
+        );
+
+        // Repo should contain two logfiles
+        let mut paths = repo.list().unwrap();
+        paths.sort();
+        assert_eq!(paths, vec![first_logpath, new_logpath]);
+    }
+}
