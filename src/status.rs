@@ -26,7 +26,7 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
             write!(w, "{}\n", t)?;
         }
     } else {
-        write!(w, "[empty]")?;
+        write!(w, "[empty]\n")?;
     }
 
     if blocked.len() > 0 {
@@ -35,7 +35,6 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
         for t in blocked.iter() {
             write!(w, "{}\n", t)?;
         }
-        write!(w, "\n")?;
     }
 
     if done.len() > 0 {
@@ -47,4 +46,78 @@ pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::task::Task;
+    use std::fs::OpenOptions;
+    use std::str;
+    use tempfile::tempdir;
+
+    fn check_status(input_tasks: Vec<Task>, expected_status: &str) {
+        let dir = tempdir().unwrap();
+        let repo = LogRepository::new(dir.path());
+        let logpath = repo.init().unwrap();
+        let mut f = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(logpath.path())
+            .unwrap();
+
+        for t in input_tasks.iter() {
+            write!(&mut f, "{}\n", t).unwrap();
+        }
+
+        let mut buf = Vec::new();
+        print(&mut buf, &repo).unwrap();
+        let actual_status = str::from_utf8(&buf).unwrap();
+        assert_eq!(actual_status, expected_status);
+    }
+
+    #[test]
+    fn test_status_no_tasks() {
+        check_status(vec![], "To Do:\n[empty]\n");
+    }
+
+    #[test]
+    fn test_status_only_todo() {
+        let tasks = vec![
+            Task::new(TaskStatus::Incomplete, "Foo"),
+            Task::new(TaskStatus::Incomplete, "Bar"),
+        ];
+        check_status(tasks, "To Do:\n* Foo\n* Bar\n");
+    }
+
+    #[test]
+    fn test_status_todo_and_blocking() {
+        let tasks = vec![
+            Task::new(TaskStatus::Incomplete, "Foo"),
+            Task::new(TaskStatus::Blocked, "Bar"),
+        ];
+        check_status(tasks, "To Do:\n* Foo\n\nBlocked:\n- Bar\n");
+    }
+
+    #[test]
+    fn test_status_blocking_and_done() {
+        let tasks = vec![
+            Task::new(TaskStatus::Blocked, "Bar"),
+            Task::new(TaskStatus::Completed, "Baz"),
+        ];
+        check_status(
+            tasks,
+            "To Do:\n[empty]\n\nBlocked:\n- Bar\n\nDone:\n+ Baz\n",
+        );
+    }
+
+    #[test]
+    fn test_status_all_task_types() {
+        let tasks = vec![
+            Task::new(TaskStatus::Incomplete, "Foo"),
+            Task::new(TaskStatus::Blocked, "Bar"),
+            Task::new(TaskStatus::Completed, "Baz"),
+        ];
+        check_status(tasks, "To Do:\n* Foo\n\nBlocked:\n- Bar\n\nDone:\n+ Baz\n");
+    }
 }
