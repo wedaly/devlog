@@ -14,7 +14,7 @@ pub struct LogPath {
 impl LogPath {
     pub fn new(dir: &Path, seq_num: usize) -> LogPath {
         let mut path = dir.to_path_buf();
-        path.push(format!("{:09}.txt", seq_num));
+        path.push(format!("{:09}.devlog", seq_num));
         LogPath { path, seq_num }
     }
 
@@ -23,7 +23,9 @@ impl LogPath {
         let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
         let seq_num: Option<usize> = stem.parse().ok();
         match (stem, ext, seq_num) {
-            (s, "txt", Some(seq_num)) if s.len() == NUM_DIGITS => Some(LogPath { path, seq_num }),
+            (s, "devlog", Some(seq_num)) if s.len() == NUM_DIGITS => {
+                Some(LogPath { path, seq_num })
+            }
             _ => None,
         }
     }
@@ -37,7 +39,7 @@ impl LogPath {
                 Some(p) => p.to_path_buf(),
                 None => PathBuf::new(),
             };
-            path.push(format!("{:09}.txt", seq_num));
+            path.push(format!("{:09}.devlog", seq_num));
             Ok(LogPath { path, seq_num })
         }
     }
@@ -86,20 +88,20 @@ mod tests {
         let d = dir();
         let p = LogPath::new(&d, 123);
         assert_eq!(p.seq_num(), 123);
-        assert_eq!(p.path(), d.join("000000123.txt"));
+        assert_eq!(p.path(), d.join("000000123.devlog"));
     }
 
     #[test]
     fn test_from_path() {
-        let path = dir().join("000000123.txt");
+        let path = dir().join("000000123.devlog");
         let p = LogPath::from_path(path).unwrap();
         assert_eq!(p.seq_num(), 123);
-        assert_eq!(p.path(), dir().join("000000123.txt"));
+        assert_eq!(p.path(), dir().join("000000123.devlog"));
     }
 
     #[test]
     fn test_from_path_max_seq_num() {
-        let fname = format!("{}.txt", MAX_SEQ_NUM);
+        let fname = format!("{}.devlog", MAX_SEQ_NUM);
         let path = dir().join(&fname);
         let p = LogPath::from_path(path).unwrap();
         assert_eq!(p.seq_num(), MAX_SEQ_NUM);
@@ -108,25 +110,25 @@ mod tests {
 
     #[test]
     fn test_from_path_not_a_number() {
-        let path = dir().join("abc123.txt");
+        let path = dir().join("abc123.devlog");
         assert!(LogPath::from_path(path).is_none());
     }
 
     #[test]
     fn test_from_path_too_few_digits() {
-        let path = dir().join("12345678.txt");
+        let path = dir().join("12345678.devlog");
         assert!(LogPath::from_path(path).is_none());
     }
 
     #[test]
     fn test_from_path_too_many_digits() {
-        let path = dir().join("1234567890.txt");
+        let path = dir().join("1234567890.devlog");
         assert!(LogPath::from_path(path).is_none());
     }
 
     #[test]
     fn test_from_path_seq_num_too_large() {
-        let fname = format!("{}.txt", MAX_SEQ_NUM + 1);
+        let fname = format!("{}.devlog", MAX_SEQ_NUM + 1);
         let path = dir().join(&fname);
         assert!(LogPath::from_path(path).is_none());
     }
@@ -142,7 +144,7 @@ mod tests {
         let d = dir();
         let p = LogPath::new(&d, 123).next().unwrap();
         assert_eq!(p.seq_num(), 124);
-        assert_eq!(p.path(), dir().join("000000124.txt"));
+        assert_eq!(p.path(), dir().join("000000124.devlog"));
     }
 
     #[test]
@@ -150,7 +152,7 @@ mod tests {
         let d = rootdir();
         let p = LogPath::new(&d, 123).next().unwrap();
         assert_eq!(p.seq_num(), 124);
-        assert_eq!(p.path(), d.join("000000124.txt"));
+        assert_eq!(p.path(), d.join("000000124.devlog"));
     }
 
     #[test]
