@@ -41,6 +41,15 @@ fn main() -> Result<(), Error> {
                         .possible_values(&["all", "todo", "started", "blocked", "done"])
                         .default_value("all")
                         .help("Sections to show"),
+                )
+                .arg(
+                    Arg::with_name("back")
+                        .short("b")
+                        .long("back")
+                        .takes_value(true)
+                        .value_name("BACK")
+                        .default_value("0")
+                        .help("Show tasks from a previous devlog"),
                 ),
         )
         .subcommand(
@@ -108,6 +117,12 @@ fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 }
 
 fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
+    let num_back = m
+        .value_of("back")
+        .unwrap()
+        .parse::<usize>()
+        .map_err(|_| Error::InvalidArgError("back must be an integer"))?;
+
     let display_mode = match m.value_of("show") {
         Some("all") => status::DisplayMode::ShowAll,
         Some("todo") => status::DisplayMode::ShowOnly(TaskStatus::ToDo),
@@ -116,9 +131,10 @@ fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
         Some("done") => status::DisplayMode::ShowOnly(TaskStatus::Done),
         _ => panic!("Invalid value for show arg"),
     };
+
     let config = Config::load();
     let r = repo(&config)?;
-    status::print(w, &r, display_mode)
+    status::print(w, &r, num_back, display_mode)
 }
 
 fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {

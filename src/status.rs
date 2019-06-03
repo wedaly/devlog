@@ -26,14 +26,22 @@ impl DisplayMode {
     }
 }
 
-pub fn print<W: Write>(w: &mut W, repo: &LogRepository, d: DisplayMode) -> Result<(), Error> {
-    let g = load_tasks_group_by_status(repo)?;
+pub fn print<W: Write>(
+    w: &mut W,
+    repo: &LogRepository,
+    num_back: usize,
+    d: DisplayMode,
+) -> Result<(), Error> {
+    let g = load_tasks_group_by_status(repo, num_back)?;
     print_status_report(w, &g, d)
 }
 
-fn load_tasks_group_by_status(repo: &LogRepository) -> Result<GroupedTasks, Error> {
+fn load_tasks_group_by_status(
+    repo: &LogRepository,
+    num_back: usize,
+) -> Result<GroupedTasks, Error> {
     let mut grouped = GroupedTasks::new();
-    if let Some(logpath) = repo.latest()? {
+    if let Some(logpath) = repo.nth_from_latest(num_back)? {
         let f = LogFile::load(logpath.path())?;
         f.tasks().iter().for_each(|t| grouped.insert(t));
     }
@@ -144,7 +152,7 @@ mod tests {
         }
 
         let mut buf = Vec::new();
-        print(&mut buf, &repo, display_mode).unwrap();
+        print(&mut buf, &repo, 0, display_mode).unwrap();
         let actual_status = str::from_utf8(&buf).unwrap();
         assert_eq!(actual_status, expected_status);
     }
