@@ -11,7 +11,7 @@ syntax match taskSymbol "^\(+\|-\|*\|\^\)"
 syntax match startedTask "^\^..*"
 syntax match blockedTask "^\-..*"
 syntax match doneTask "^+..*"
-syntax match inlineCodeSnippet "\`.*\`"
+syntax match inlineCodeSnippet "\`[^`]*\`"
 syntax region blockCodeSnippet start="```" end="```"
 
 hi def link taskSymbol Operator
