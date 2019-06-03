@@ -2,7 +2,7 @@ extern crate clap;
 extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use devlog::{editor, rollover, status, Config, Error, LogRepository};
+use devlog::{editor, rollover, status, Config, Error, LogRepository, TaskStatus};
 use std::fs::{create_dir_all, File};
 use std::io::{copy, stdout, Write};
 
@@ -29,7 +29,20 @@ fn main() -> Result<(), Error> {
             SubCommand::with_name("rollover")
                 .about("Create new devlog file with incomplete and blocked tasks"),
         )
-        .subcommand(SubCommand::with_name("status").about("Show recent tasks"))
+        .subcommand(
+            SubCommand::with_name("status")
+                .about("Show recent tasks")
+                .arg(
+                    Arg::with_name("show")
+                        .short("s")
+                        .long("show")
+                        .takes_value(true)
+                        .value_name("SHOW")
+                        .possible_values(&["all", "todo", "started", "blocked", "done"])
+                        .default_value("all")
+                        .help("Sections to show"),
+                ),
+        )
         .subcommand(
             SubCommand::with_name("tail")
                 .about("Show recent devlogs")
@@ -49,7 +62,7 @@ fn main() -> Result<(), Error> {
     match m.subcommand() {
         ("edit", Some(_)) => edit_cmd(&mut w),
         ("rollover", Some(_)) => rollover_cmd(&mut w),
-        ("status", Some(_)) => status_cmd(&mut w),
+        ("status", Some(m)) => status_cmd(&mut w, m),
         ("tail", Some(m)) => tail_cmd(&mut w, m),
         _ => panic!("No subcommand"),
     }
@@ -94,10 +107,18 @@ fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     Ok(())
 }
 
-fn status_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
+    let display_mode = match m.value_of("show") {
+        Some("all") => status::DisplayMode::ShowAll,
+        Some("todo") => status::DisplayMode::ShowOnly(TaskStatus::ToDo),
+        Some("started") => status::DisplayMode::ShowOnly(TaskStatus::Started),
+        Some("blocked") => status::DisplayMode::ShowOnly(TaskStatus::Blocked),
+        Some("done") => status::DisplayMode::ShowOnly(TaskStatus::Done),
+        _ => panic!("Invalid value for show arg"),
+    };
     let config = Config::load();
     let r = repo(&config)?;
-    status::print(w, &r, status::DisplayMode::ShowAll) // TODO
+    status::print(w, &r, display_mode)
 }
 
 fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
