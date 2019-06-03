@@ -1,16 +1,12 @@
+use crate::config::Config;
 use crate::error::Error;
-use std::env;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-const EDITOR_ENV_VAR: &'static str = "DEVLOG_EDITOR";
-const DEFAULT_EDITOR: &'static str = "nano";
-
-pub fn open<W: Write>(w: &mut W, path: &Path) -> Result<(), Error> {
-    let prog = env::var(EDITOR_ENV_VAR).unwrap_or(DEFAULT_EDITOR.to_string());
-
-    let status = Command::new(&prog).arg(&path).status()?;
+pub fn open<W: Write>(w: &mut W, config: &Config, path: &Path) -> Result<(), Error> {
+    let prog = config.editor_prog();
+    let status = Command::new(prog).arg(&path).status()?;
 
     if status.success() {
         Ok(())
