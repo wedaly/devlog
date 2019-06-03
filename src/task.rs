@@ -2,8 +2,9 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TaskStatus {
-    Incomplete,
-    Completed,
+    ToDo,
+    Started,
+    Done,
     Blocked,
 }
 
@@ -25,12 +26,17 @@ impl Task {
         let parse_content = |s: &str| s[1..].trim().to_string();
         if s.starts_with("*") {
             Some(Task {
-                status: TaskStatus::Incomplete,
+                status: TaskStatus::ToDo,
+                content: parse_content(s),
+            })
+        } else if s.starts_with("^") {
+            Some(Task {
+                status: TaskStatus::Started,
                 content: parse_content(s),
             })
         } else if s.starts_with("+") {
             Some(Task {
-                status: TaskStatus::Completed,
+                status: TaskStatus::Done,
                 content: parse_content(s),
             })
         } else if s.starts_with("-") {
@@ -55,8 +61,9 @@ impl Task {
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.status {
-            TaskStatus::Incomplete => write!(f, "* ")?,
-            TaskStatus::Completed => write!(f, "+ ")?,
+            TaskStatus::ToDo => write!(f, "* ")?,
+            TaskStatus::Started => write!(f, "^ ")?,
+            TaskStatus::Done => write!(f, "+ ")?,
             TaskStatus::Blocked => write!(f, "- ")?,
         };
         write!(f, "{}", self.content)
@@ -68,16 +75,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_incomplete() {
-        let t = Task::from_string("* INCOMPLETE").expect("Could not parse incomplete task");
-        assert_eq!(t.status(), TaskStatus::Incomplete);
+    fn test_parse_todo() {
+        let t = Task::from_string("* INCOMPLETE").expect("Could not parse todo task");
+        assert_eq!(t.status(), TaskStatus::ToDo);
         assert_eq!(t.content(), "INCOMPLETE");
     }
 
     #[test]
-    fn test_parse_completed() {
-        let t = Task::from_string("+ Done").expect("Could not parse completed task");
-        assert_eq!(t.status(), TaskStatus::Completed);
+    fn test_parse_started() {
+        let t = Task::from_string("^ STARTED").expect("Could not parse started task");
+        assert_eq!(t.status(), TaskStatus::Started);
+        assert_eq!(t.content(), "STARTED");
+    }
+
+    #[test]
+    fn test_parse_done() {
+        let t = Task::from_string("+ Done").expect("Could not parse done task");
+        assert_eq!(t.status(), TaskStatus::Done);
         assert_eq!(t.content(), "Done");
     }
 
@@ -103,20 +117,27 @@ mod tests {
     #[test]
     fn test_trim_whitespace() {
         let t = Task::from_string("+    done      \n").expect("Could not parse task");
-        assert_eq!(t.status(), TaskStatus::Completed);
+        assert_eq!(t.status(), TaskStatus::Done);
         assert_eq!(t.content(), "done");
     }
 
     #[test]
-    fn test_fmt_incomplete() {
-        let t = Task::new(TaskStatus::Incomplete, "INCOMPLETE");
+    fn test_fmt_todo() {
+        let t = Task::new(TaskStatus::ToDo, "INCOMPLETE");
         let s = format!("{}", t);
         assert_eq!(s, "* INCOMPLETE");
     }
 
     #[test]
-    fn test_fmt_completed() {
-        let t = Task::new(TaskStatus::Completed, "DONE");
+    fn test_fmt_started() {
+        let t = Task::new(TaskStatus::Started, "STARTED");
+        let s = format!("{}", t);
+        assert_eq!(s, "^ STARTED");
+    }
+
+    #[test]
+    fn test_fmt_done() {
+        let t = Task::new(TaskStatus::Done, "DONE");
         let s = format!("{}", t);
         assert_eq!(s, "+ DONE");
     }

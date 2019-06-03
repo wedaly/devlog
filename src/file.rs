@@ -50,9 +50,9 @@ mod tests {
 
         let lf = LogFile::load(&p).unwrap();
         let expected = vec![
-            Task::new(TaskStatus::Completed, "DONE"),
+            Task::new(TaskStatus::Done, "DONE"),
             Task::new(TaskStatus::Blocked, "BLOCKED"),
-            Task::new(TaskStatus::Incomplete, "INCOMPLETE"),
+            Task::new(TaskStatus::ToDo, "INCOMPLETE"),
         ];
         assert_eq!(lf.tasks(), &expected[..]);
     }

@@ -1,51 +1,86 @@
 use crate::error::Error;
 use crate::file::LogFile;
 use crate::repository::LogRepository;
-use crate::task::TaskStatus;
+use crate::task::{Task, TaskStatus};
 use std::io::Write;
 
 pub fn print<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
-    let mut todo = Vec::new();
-    let mut blocked = Vec::new();
-    let mut done = Vec::new();
+    let g = load_tasks_group_by_status(repo)?;
+    format_status_report(w, &g)
+}
 
+fn load_tasks_group_by_status(repo: &LogRepository) -> Result<GroupedTasks, Error> {
+    let mut grouped = GroupedTasks::new();
     if let Some(logpath) = repo.latest()? {
         let f = LogFile::load(logpath.path())?;
-        for t in f.tasks() {
-            match t.status() {
-                TaskStatus::Incomplete => todo.push(t.clone()),
-                TaskStatus::Blocked => blocked.push(t.clone()),
-                TaskStatus::Completed => done.push(t.clone()),
-            }
+        f.tasks().iter().for_each(|t| grouped.insert(t));
+    }
+    Ok(grouped)
+}
+
+fn format_status_report<W: Write>(w: &mut W, g: &GroupedTasks) -> Result<(), Error> {
+    if g.started.len() > 0 {
+        write!(w, "In Progress:\n")?;
+        for t in g.started.iter() {
+            write!(w, "{}\n", t)?;
         }
+        write!(w, "\n")?;
     }
 
     write!(w, "To Do:\n")?;
-    if todo.len() > 0 {
-        for t in todo.iter() {
+    if g.todo.len() > 0 {
+        for t in g.todo.iter() {
             write!(w, "{}\n", t)?;
         }
     } else {
         write!(w, "[empty]\n")?;
     }
 
-    if blocked.len() > 0 {
+    if g.blocked.len() > 0 {
         write!(w, "\n")?;
         write!(w, "Blocked:\n")?;
-        for t in blocked.iter() {
+        for t in g.blocked.iter() {
             write!(w, "{}\n", t)?;
         }
     }
 
-    if done.len() > 0 {
+    if g.done.len() > 0 {
         write!(w, "\n")?;
         write!(w, "Done:\n")?;
-        for t in done.iter() {
+        for t in g.done.iter() {
             write!(w, "{}\n", t)?;
         }
     }
 
     Ok(())
+}
+
+struct GroupedTasks {
+    todo: Vec<Task>,
+    started: Vec<Task>,
+    blocked: Vec<Task>,
+    done: Vec<Task>,
+}
+
+impl GroupedTasks {
+    fn new() -> GroupedTasks {
+        GroupedTasks {
+            todo: Vec::new(),
+            started: Vec::new(),
+            blocked: Vec::new(),
+            done: Vec::new(),
+        }
+    }
+
+    fn insert(&mut self, task: &Task) {
+        let t = task.clone();
+        match t.status() {
+            TaskStatus::ToDo => self.todo.push(t),
+            TaskStatus::Started => self.started.push(t),
+            TaskStatus::Blocked => self.blocked.push(t),
+            TaskStatus::Done => self.done.push(t),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -84,26 +119,53 @@ mod tests {
     #[test]
     fn test_status_only_todo() {
         let tasks = vec![
-            Task::new(TaskStatus::Incomplete, "Foo"),
-            Task::new(TaskStatus::Incomplete, "Bar"),
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::ToDo, "Bar"),
         ];
         check_status(tasks, "To Do:\n* Foo\n* Bar\n");
     }
 
     #[test]
-    fn test_status_todo_and_blocking() {
+    fn test_status_only_started() {
         let tasks = vec![
-            Task::new(TaskStatus::Incomplete, "Foo"),
+            Task::new(TaskStatus::Started, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+        ];
+        check_status(tasks, "In Progress:\n^ Foo\n^ Bar\n\nTo Do:\n[empty]\n")
+    }
+
+    #[test]
+    fn test_status_only_blocked() {
+        let tasks = vec![
+            Task::new(TaskStatus::Blocked, "Foo"),
+            Task::new(TaskStatus::Blocked, "Bar"),
+        ];
+        check_status(tasks, "To Do:\n[empty]\n\nBlocked:\n- Foo\n- Bar\n");
+    }
+
+    #[test]
+    fn test_status_only_done() {
+        let tasks = vec![
+            Task::new(TaskStatus::Done, "Foo"),
+            Task::new(TaskStatus::Done, "Bar"),
+        ];
+        check_status(tasks, "To Do:\n[empty]\n\nDone:\n+ Foo\n+ Bar\n");
+    }
+
+    #[test]
+    fn test_status_todo_and_blocked() {
+        let tasks = vec![
+            Task::new(TaskStatus::ToDo, "Foo"),
             Task::new(TaskStatus::Blocked, "Bar"),
         ];
         check_status(tasks, "To Do:\n* Foo\n\nBlocked:\n- Bar\n");
     }
 
     #[test]
-    fn test_status_blocking_and_done() {
+    fn test_status_blocked_and_done() {
         let tasks = vec![
             Task::new(TaskStatus::Blocked, "Bar"),
-            Task::new(TaskStatus::Completed, "Baz"),
+            Task::new(TaskStatus::Done, "Baz"),
         ];
         check_status(
             tasks,
@@ -114,10 +176,14 @@ mod tests {
     #[test]
     fn test_status_all_task_types() {
         let tasks = vec![
-            Task::new(TaskStatus::Incomplete, "Foo"),
-            Task::new(TaskStatus::Blocked, "Bar"),
-            Task::new(TaskStatus::Completed, "Baz"),
+            Task::new(TaskStatus::ToDo, "Foo"),
+            Task::new(TaskStatus::Started, "Bar"),
+            Task::new(TaskStatus::Blocked, "Baz"),
+            Task::new(TaskStatus::Done, "Boo"),
         ];
-        check_status(tasks, "To Do:\n* Foo\n\nBlocked:\n- Bar\n\nDone:\n+ Baz\n");
+        check_status(
+            tasks,
+            "In Progress:\n^ Bar\n\nTo Do:\n* Foo\n\nBlocked:\n- Baz\n\nDone:\n+ Boo\n",
+        );
     }
 }
