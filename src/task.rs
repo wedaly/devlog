@@ -4,8 +4,19 @@ use std::fmt;
 pub enum TaskStatus {
     ToDo,
     Started,
-    Done,
     Blocked,
+    Done,
+}
+
+impl TaskStatus {
+    pub fn display_name(&self) -> &str {
+        match self {
+            TaskStatus::ToDo => "To Do",
+            TaskStatus::Started => "In Progress",
+            TaskStatus::Blocked => "Blocked",
+            TaskStatus::Done => "Done",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

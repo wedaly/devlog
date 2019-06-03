@@ -18,38 +18,31 @@ fn load_tasks_group_by_status(repo: &LogRepository) -> Result<GroupedTasks, Erro
     Ok(grouped)
 }
 
+const ALL_STATUSES: &[TaskStatus] = &[
+    TaskStatus::Started,
+    TaskStatus::ToDo,
+    TaskStatus::Blocked,
+    TaskStatus::Done,
+];
+
 fn format_status_report<W: Write>(w: &mut W, g: &GroupedTasks) -> Result<(), Error> {
-    if g.started.len() > 0 {
-        write!(w, "In Progress:\n")?;
-        for t in g.started.iter() {
-            write!(w, "{}\n", t)?;
-        }
-        write!(w, "\n")?;
-    }
-
-    write!(w, "To Do:\n")?;
-    if g.todo.len() > 0 {
-        for t in g.todo.iter() {
-            write!(w, "{}\n", t)?;
-        }
-    } else {
-        write!(w, "[empty]\n")?;
-    }
-
-    if g.blocked.len() > 0 {
-        write!(w, "\n")?;
-        write!(w, "Blocked:\n")?;
-        for t in g.blocked.iter() {
-            write!(w, "{}\n", t)?;
+    let mut has_prev = false;
+    for status in ALL_STATUSES {
+        let tasks = g.retrieve(status);
+        if tasks.len() > 0 {
+            if has_prev {
+                write!(w, "\n")?;
+            }
+            write!(w, "{}:\n", status.display_name())?;
+            for t in tasks {
+                write!(w, "{}\n", t)?;
+            }
+            has_prev = true;
         }
     }
 
-    if g.done.len() > 0 {
-        write!(w, "\n")?;
-        write!(w, "Done:\n")?;
-        for t in g.done.iter() {
-            write!(w, "{}\n", t)?;
-        }
+    if !has_prev {
+        write!(w, "[no tasks]\n")?;
     }
 
     Ok(())
@@ -79,6 +72,15 @@ impl GroupedTasks {
             TaskStatus::Started => self.started.push(t),
             TaskStatus::Blocked => self.blocked.push(t),
             TaskStatus::Done => self.done.push(t),
+        }
+    }
+
+    fn retrieve(&self, status: &TaskStatus) -> &[Task] {
+        match status {
+            TaskStatus::ToDo => &self.todo,
+            TaskStatus::Started => &self.started,
+            TaskStatus::Blocked => &self.blocked,
+            TaskStatus::Done => &self.done,
         }
     }
 }
@@ -113,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_status_no_tasks() {
-        check_status(vec![], "To Do:\n[empty]\n");
+        check_status(vec![], "[no tasks]\n");
     }
 
     #[test]
@@ -131,7 +133,7 @@ mod tests {
             Task::new(TaskStatus::Started, "Foo"),
             Task::new(TaskStatus::Started, "Bar"),
         ];
-        check_status(tasks, "In Progress:\n^ Foo\n^ Bar\n\nTo Do:\n[empty]\n")
+        check_status(tasks, "In Progress:\n^ Foo\n^ Bar\n")
     }
 
     #[test]
@@ -140,7 +142,7 @@ mod tests {
             Task::new(TaskStatus::Blocked, "Foo"),
             Task::new(TaskStatus::Blocked, "Bar"),
         ];
-        check_status(tasks, "To Do:\n[empty]\n\nBlocked:\n- Foo\n- Bar\n");
+        check_status(tasks, "Blocked:\n- Foo\n- Bar\n");
     }
 
     #[test]
@@ -149,7 +151,7 @@ mod tests {
             Task::new(TaskStatus::Done, "Foo"),
             Task::new(TaskStatus::Done, "Bar"),
         ];
-        check_status(tasks, "To Do:\n[empty]\n\nDone:\n+ Foo\n+ Bar\n");
+        check_status(tasks, "Done:\n+ Foo\n+ Bar\n");
     }
 
     #[test]
@@ -167,10 +169,7 @@ mod tests {
             Task::new(TaskStatus::Blocked, "Bar"),
             Task::new(TaskStatus::Done, "Baz"),
         ];
-        check_status(
-            tasks,
-            "To Do:\n[empty]\n\nBlocked:\n- Bar\n\nDone:\n+ Baz\n",
-        );
+        check_status(tasks, "Blocked:\n- Bar\n\nDone:\n+ Baz\n");
     }
 
     #[test]
