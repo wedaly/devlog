@@ -70,11 +70,8 @@ impl LogRepository {
             self.latest()
         } else {
             let mut paths = self.tail(n + 1)?;
-            if paths.len() < n {
-                Ok(None)
-            } else {
-                Ok(paths.drain(..).nth(n))
-            }
+            let p = paths.drain(..).nth(n);
+            Ok(p)
         }
     }
 }
