@@ -132,14 +132,15 @@ impl GroupedTasks {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rollover::rollover;
     use crate::task::Task;
     use std::fs::OpenOptions;
+    use std::path::Path;
     use std::str;
     use tempfile::tempdir;
 
-    fn check_status(input_tasks: Vec<Task>, display_mode: DisplayMode, expected_status: &str) {
-        let dir = tempdir().unwrap();
-        let repo = LogRepository::new(dir.path());
+    fn init_repo_with_tasks(dir_path: &Path, tasks: &[Task]) -> LogRepository {
+        let repo = LogRepository::new(dir_path);
         let logpath = repo.init().unwrap();
         let mut f = OpenOptions::new()
             .write(true)
@@ -147,65 +148,105 @@ mod tests {
             .open(logpath.path())
             .unwrap();
 
-        for t in input_tasks.iter() {
+        for t in tasks {
             write!(&mut f, "{}\n", t).unwrap();
         }
 
+        repo
+    }
+
+    fn check_status(
+        repo: &LogRepository,
+        num_back: usize,
+        display_mode: DisplayMode,
+        expected_status: &str,
+    ) {
         let mut buf = Vec::new();
-        print(&mut buf, &repo, 0, display_mode).unwrap();
+        print(&mut buf, &repo, num_back, display_mode).unwrap();
         let actual_status = str::from_utf8(&buf).unwrap();
         assert_eq!(actual_status, expected_status);
     }
 
+    fn check_current_status(
+        repo: &LogRepository,
+        display_mode: DisplayMode,
+        expected_status: &str,
+    ) {
+        let num_back = 0;
+        check_status(repo, num_back, display_mode, expected_status)
+    }
+
     #[test]
     fn test_status_no_tasks() {
-        check_status(vec![], DisplayMode::ShowAll, "[no tasks]\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(dir.path(), &[]);
+        check_current_status(&repo, DisplayMode::ShowAll, "[no tasks]\n");
     }
 
     #[test]
     fn test_status_only_todo() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::ToDo, "Bar"),
-        ];
-        check_status(tasks, DisplayMode::ShowAll, "To Do:\n* Foo\n* Bar\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::ToDo, "Bar"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowAll, "To Do:\n* Foo\n* Bar\n");
     }
 
     #[test]
     fn test_status_only_started() {
-        let tasks = vec![
-            Task::new(TaskStatus::Started, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-        ];
-        check_status(tasks, DisplayMode::ShowAll, "In Progress:\n^ Foo\n^ Bar\n")
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::Started, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowAll, "In Progress:\n^ Foo\n^ Bar\n")
     }
 
     #[test]
     fn test_status_only_blocked() {
-        let tasks = vec![
-            Task::new(TaskStatus::Blocked, "Foo"),
-            Task::new(TaskStatus::Blocked, "Bar"),
-        ];
-        check_status(tasks, DisplayMode::ShowAll, "Blocked:\n- Foo\n- Bar\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::Blocked, "Foo"),
+                Task::new(TaskStatus::Blocked, "Bar"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowAll, "Blocked:\n- Foo\n- Bar\n");
     }
 
     #[test]
     fn test_status_only_done() {
-        let tasks = vec![
-            Task::new(TaskStatus::Done, "Foo"),
-            Task::new(TaskStatus::Done, "Bar"),
-        ];
-        check_status(tasks, DisplayMode::ShowAll, "Done:\n+ Foo\n+ Bar\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::Done, "Foo"),
+                Task::new(TaskStatus::Done, "Bar"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowAll, "Done:\n+ Foo\n+ Bar\n");
     }
 
     #[test]
     fn test_status_todo_and_blocked() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Blocked, "Bar"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Blocked, "Bar"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowAll,
             "To Do:\n* Foo\n\nBlocked:\n- Bar\n",
         );
@@ -213,12 +254,16 @@ mod tests {
 
     #[test]
     fn test_status_blocked_and_done() {
-        let tasks = vec![
-            Task::new(TaskStatus::Blocked, "Bar"),
-            Task::new(TaskStatus::Done, "Baz"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::Blocked, "Bar"),
+                Task::new(TaskStatus::Done, "Baz"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowAll,
             "Blocked:\n- Bar\n\nDone:\n+ Baz\n",
         );
@@ -226,14 +271,18 @@ mod tests {
 
     #[test]
     fn test_status_all_task_types() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowAll,
             "In Progress:\n^ Bar\n\nTo Do:\n* Foo\n\nBlocked:\n- Baz\n\nDone:\n+ Boo\n",
         );
@@ -241,57 +290,77 @@ mod tests {
 
     #[test]
     fn test_show_only_todo() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::ToDo), "* Foo\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::ToDo), "* Foo\n");
     }
 
     #[test]
     fn test_show_only_started() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Started), "^ Bar\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Started), "^ Bar\n");
     }
 
     #[test]
     fn test_show_only_blocked() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Blocked), "- Baz\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Blocked), "- Baz\n");
     }
 
     #[test]
     fn test_show_only_done() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Foo"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(tasks, DisplayMode::ShowOnly(TaskStatus::Done), "+ Boo\n");
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Foo"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Done), "+ Boo\n");
     }
 
     #[test]
     fn test_show_only_todo_no_tasks() {
-        let tasks = vec![
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowOnly(TaskStatus::ToDo),
             "[no tasks]\n",
         );
@@ -299,13 +368,17 @@ mod tests {
 
     #[test]
     fn test_show_only_started_no_tasks() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowOnly(TaskStatus::Started),
             "[no tasks]\n",
         );
@@ -313,13 +386,17 @@ mod tests {
 
     #[test]
     fn test_show_only_blocked_no_tasks() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Bar"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Done, "Boo"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Bar"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Done, "Boo"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowOnly(TaskStatus::Blocked),
             "[no tasks]\n",
         );
@@ -327,15 +404,49 @@ mod tests {
 
     #[test]
     fn test_show_only_done_no_tasks() {
-        let tasks = vec![
-            Task::new(TaskStatus::ToDo, "Bar"),
-            Task::new(TaskStatus::Started, "Bar"),
-            Task::new(TaskStatus::Blocked, "Baz"),
-        ];
-        check_status(
-            tasks,
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Bar"),
+                Task::new(TaskStatus::Started, "Bar"),
+                Task::new(TaskStatus::Blocked, "Baz"),
+            ],
+        );
+        check_current_status(
+            &repo,
             DisplayMode::ShowOnly(TaskStatus::Done),
             "[no tasks]\n",
         );
+    }
+
+    #[test]
+    fn test_previous_status() {
+        let dir = tempdir().unwrap();
+        let repo = init_repo_with_tasks(
+            dir.path(),
+            &[
+                Task::new(TaskStatus::ToDo, "Bar"),
+                Task::new(TaskStatus::Done, "Bar"),
+                Task::new(TaskStatus::Done, "Baz"),
+            ],
+        );
+
+        // rollover creates a new devlog file with only the "todo" task
+        rollover(&repo).unwrap();
+
+        // check before the first logfile
+        check_status(&repo, 2, DisplayMode::ShowAll, "[no tasks]\n");
+
+        // check the first logfile
+        check_status(
+            &repo,
+            1,
+            DisplayMode::ShowAll,
+            "To Do:\n* Bar\n\nDone:\n+ Bar\n+ Baz\n",
+        );
+
+        // check the latest logfile
+        check_status(&repo, 0, DisplayMode::ShowAll, "To Do:\n* Bar\n");
     }
 }
