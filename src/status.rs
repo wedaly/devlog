@@ -70,10 +70,6 @@ fn print_status_report<W: Write>(w: &mut W, g: &GroupedTasks, d: DisplayMode) ->
         }
     }
 
-    if !has_prev {
-        write!(w, "[no tasks]\n")?;
-    }
-
     Ok(())
 }
 
@@ -180,7 +176,7 @@ mod tests {
     fn test_status_no_tasks() {
         let dir = tempdir().unwrap();
         let repo = init_repo_with_tasks(dir.path(), &[]);
-        check_current_status(&repo, DisplayMode::ShowAll, "[no tasks]\n");
+        check_current_status(&repo, DisplayMode::ShowAll, "");
     }
 
     #[test]
@@ -359,11 +355,7 @@ mod tests {
                 Task::new(TaskStatus::Done, "Boo"),
             ],
         );
-        check_current_status(
-            &repo,
-            DisplayMode::ShowOnly(TaskStatus::ToDo),
-            "[no tasks]\n",
-        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::ToDo), "");
     }
 
     #[test]
@@ -377,11 +369,7 @@ mod tests {
                 Task::new(TaskStatus::Done, "Boo"),
             ],
         );
-        check_current_status(
-            &repo,
-            DisplayMode::ShowOnly(TaskStatus::Started),
-            "[no tasks]\n",
-        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Started), "");
     }
 
     #[test]
@@ -395,11 +383,7 @@ mod tests {
                 Task::new(TaskStatus::Done, "Boo"),
             ],
         );
-        check_current_status(
-            &repo,
-            DisplayMode::ShowOnly(TaskStatus::Blocked),
-            "[no tasks]\n",
-        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Blocked), "");
     }
 
     #[test]
@@ -413,11 +397,7 @@ mod tests {
                 Task::new(TaskStatus::Blocked, "Baz"),
             ],
         );
-        check_current_status(
-            &repo,
-            DisplayMode::ShowOnly(TaskStatus::Done),
-            "[no tasks]\n",
-        );
+        check_current_status(&repo, DisplayMode::ShowOnly(TaskStatus::Done), "");
     }
 
     #[test]
@@ -436,7 +416,7 @@ mod tests {
         rollover(&repo).unwrap();
 
         // check before the first logfile
-        check_status(&repo, 2, DisplayMode::ShowAll, "[no tasks]\n");
+        check_status(&repo, 2, DisplayMode::ShowAll, "");
 
         // check the first logfile
         check_status(
