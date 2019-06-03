@@ -52,16 +52,7 @@ impl LogRepository {
 
     pub fn latest(&self) -> Result<Option<LogPath>, Error> {
         let mut all = self.list()?;
-        let latest = all.drain(..).fold(None, |acc, p| match acc {
-            None => Some(p),
-            Some(q) => {
-                if p > q {
-                    Some(p)
-                } else {
-                    Some(q)
-                }
-            }
-        });
+        let latest = all.drain(..).max();
         Ok(latest)
     }
 
