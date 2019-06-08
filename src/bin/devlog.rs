@@ -109,7 +109,7 @@ fn open_or_create_repo<W: Write>(
             created = true;
             create_dir_all(dir_path)?;
         } else {
-            exit(1);
+            exit(0);
         }
     }
 
@@ -146,8 +146,12 @@ fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
 fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let config = Config::load();
     let r = LogRepository::new(config.repo_dir());
-    let (logpath, count) = rollover::rollover(&r)?;
-    write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
+
+    if prompt_confirm(w, "Rollover devlog?")? {
+        let (logpath, count) = rollover::rollover(&r)?;
+        write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
+    }
+
     Ok(())
 }
 
