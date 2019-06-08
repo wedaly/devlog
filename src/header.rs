@@ -22,7 +22,7 @@ To quickly view tasks:
 To rollover incomplete and blocked tasks to a fresh devlog:
    devlog rollover
 
-For full documentation, go here: TODO";
+Please visit https://devlog-cli.org/ for the full user guide.";
 
 pub fn write_header<W: Write>(w: &mut W, include_help_msg: bool) -> Result<(), Error> {
     let today = Local::today();
