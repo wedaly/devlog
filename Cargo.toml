@@ -7,7 +7,7 @@ description = "devlog is a command-line tool for tracking daily development task
 repository = "https://github.com/wedaly/devlog"
 homepage = "https://devlog-cli.org"
 readme = "README.md"
-keywords = ["task", "todo", "development", "planning"]
+keywords = ["task", "todo", "development", "planning", "cli"]
 categories = ["command-line-utilities", "text-processing"]
 license = "MIT License"
 
