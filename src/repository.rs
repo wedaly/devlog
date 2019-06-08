@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::header::write_header;
 use crate::path::LogPath;
 use std::collections::BinaryHeap;
-use std::fs::{read_dir, OpenOptions};
+use std::fs::{create_dir_all, read_dir, OpenOptions};
 use std::path::{Path, PathBuf};
 
 pub struct LogRepository {
@@ -15,13 +15,22 @@ impl LogRepository {
         LogRepository { dir }
     }
 
+    pub fn initialized(&self) -> Result<bool, Error> {
+        Ok(self.dir.exists() && self.list()?.len() > 0)
+    }
+
     pub fn init(&self) -> Result<LogPath, Error> {
+        // Ensure the directory exists
+        create_dir_all(&self.dir)?;
+
+        // Create the first logfile
         let p = LogPath::new(&self.dir, 1);
         let mut f = OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(p.path())?;
         write_header(&mut f, true)?;
+
         Ok(p)
     }
 

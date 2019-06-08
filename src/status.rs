@@ -413,7 +413,8 @@ mod tests {
         );
 
         // rollover creates a new devlog file with only the "todo" task
-        rollover(&repo).unwrap();
+        let p = repo.latest().unwrap().unwrap();
+        rollover(&p).unwrap();
 
         // check before the first logfile
         check_status(&repo, 2, DisplayMode::ShowAll, "");

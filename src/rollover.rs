@@ -2,20 +2,12 @@ use crate::error::Error;
 use crate::file::LogFile;
 use crate::header::write_header;
 use crate::path::LogPath;
-use crate::repository::LogRepository;
 use crate::task::{Task, TaskStatus};
 use std::fs::OpenOptions;
 use std::io::Write;
 
-pub fn rollover(repo: &LogRepository) -> Result<(LogPath, usize), Error> {
-    match repo.latest()? {
-        Some(latest) => rollover_from(latest),
-        None => repo.init().map(|p| (p, 0)),
-    }
-}
-
-fn rollover_from(p: LogPath) -> Result<(LogPath, usize), Error> {
-    let tasks = load_carryover_tasks(&p)?;
+pub fn rollover(p: &LogPath) -> Result<(LogPath, usize), Error> {
+    let tasks = load_carryover_tasks(p)?;
     let next = p.next()?;
     let mut f = OpenOptions::new()
         .write(true)
@@ -45,23 +37,8 @@ fn load_carryover_tasks(p: &LogPath) -> Result<Vec<Task>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::repository::LogRepository;
     use tempfile::tempdir;
-
-    #[test]
-    fn test_rollover_empty_repo() {
-        let dir = tempdir().unwrap();
-        let repo = LogRepository::new(dir.path());
-        let (logpath, num_imported) = rollover(&repo).unwrap();
-        assert_eq!(num_imported, 0);
-
-        // newly created logfile contains example tasks
-        let logfile = LogFile::load(logpath.path()).unwrap();
-        assert_eq!(logfile.tasks().len(), 4);
-
-        // new logfile is only one in the repo
-        let paths = repo.list().unwrap();
-        assert_eq!(paths, vec![logpath]);
-    }
 
     #[test]
     fn test_rollover() {
@@ -75,7 +52,7 @@ mod tests {
 
         // Rollover, then check that only todo/started/blocked tasks
         // were imported into the new logfile
-        let (new_logpath, num_imported) = rollover(&repo).unwrap();
+        let (new_logpath, num_imported) = rollover(&first_logpath).unwrap();
         assert_eq!(num_imported, 3);
 
         // Check tasks in the new logfile

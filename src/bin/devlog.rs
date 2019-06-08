@@ -3,7 +3,7 @@ extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use devlog::{editor, rollover, status, Config, Error, LogRepository, TaskStatus};
-use std::fs::{create_dir_all, File};
+use std::fs::File;
 use std::io::{copy, stdin, stdout, Write};
 use std::process::exit;
 
@@ -97,62 +97,74 @@ fn prompt_confirm<W: Write>(w: &mut W, msg: &str) -> Result<bool, Error> {
         .map_err(From::from)
 }
 
-fn open_or_create_repo<W: Write>(
-    w: &mut W,
-    config: &Config,
-) -> Result<(LogRepository, bool), Error> {
-    let mut created = false;
-    let dir_path = config.repo_dir();
-    if !dir_path.exists() {
-        let msg = format!("Create devlog repository at {:?}?", dir_path);
+fn abort_if_not_initialized<W: Write>(w: &mut W, repo: &LogRepository) -> Result<(), Error> {
+    if !repo.initialized()? {
+        write!(w, "Repository at {:?} has not been initialized.\nPlease run `devlog init` to initialize the repository.\n", repo.path())?;
+        exit(1);
+    }
+    Ok(())
+}
+
+fn initialize_if_necessary<W: Write>(w: &mut W, repo: &LogRepository) -> Result<bool, Error> {
+    if repo.initialized()? {
+        Ok(false)
+    } else {
+        let msg = format!("Initialize devlog repository at {:?}?", repo.path());
         if prompt_confirm(w, &msg)? {
-            created = true;
-            create_dir_all(dir_path)?;
+            repo.init()?;
         } else {
             exit(0);
         }
+        Ok(true)
     }
-
-    if !dir_path.is_dir() {
-        return Err(Error::InvalidArg("Repository path is not a directory"));
-    }
-
-    Ok((LogRepository::new(dir_path), created))
 }
 
 fn init_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let config = Config::load();
-    let (repo, created) = open_or_create_repo(w, &config)?;
-    if created {
-        repo.init()?;
-        write!(w, "Initialized devlog repository at {:?}\n", repo.path())?;
-    } else {
-        write!(w, "Devlog repository already exists at {:?}\n", repo.path())?;
-    }
-    Ok(())
+    let repo = LogRepository::new(config.repo_dir());
+    initialize_if_necessary(w, &repo).and_then(|created| {
+        if created {
+            write!(w, "Success!\n").map_err(From::from)
+        } else {
+            write!(w, "Devlog repository already exists at {:?}\n", repo.path()).map_err(From::from)
+        }
+    })
 }
 
 fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let config = Config::load();
-    let (r, _) = open_or_create_repo(w, &config)?;
-    match r.latest()? {
+    let repo = LogRepository::new(config.repo_dir());
+    initialize_if_necessary(w, &repo).and_then(|_| match repo.latest()? {
         Some(logpath) => editor::open(w, &config, logpath.path()),
-        None => r
-            .init()
-            .and_then(|logpath| editor::open(w, &config, logpath.path())),
-    }
+        None => {
+            // The user already confirmed initialization of the repo,
+            // so if we don't find it we initialize it again to ensure it exists.
+            repo.init()
+                .and_then(|logpath| editor::open(w, &config, logpath.path()))
+        }
+    })
 }
 
 fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let config = Config::load();
-    let r = LogRepository::new(config.repo_dir());
-
-    if prompt_confirm(w, "Rollover devlog?")? {
-        let (logpath, count) = rollover::rollover(&r)?;
-        write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
-    }
-
-    Ok(())
+    let repo = LogRepository::new(config.repo_dir());
+    abort_if_not_initialized(w, &repo).and_then(|()| {
+        match repo.latest()? {
+            Some(p) => {
+                if prompt_confirm(w, "Rollover devlog?")? {
+                    let (logpath, count) = rollover::rollover(&p)?;
+                    write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
+                }
+                Ok(())
+            }
+            None => {
+                // This will only occur if something deleted the repo
+                // right after we checked that it was initialized (unlikely)
+                write!(w, "Could not find devlog file to rollover\n")?;
+                exit(1)
+            }
+        }
+    })
 }
 
 fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
@@ -172,8 +184,8 @@ fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     };
 
     let config = Config::load();
-    let r = LogRepository::new(config.repo_dir());
-    status::print(w, &r, num_back, display_mode)
+    let repo = LogRepository::new(config.repo_dir());
+    abort_if_not_initialized(w, &repo).and_then(|_| status::print(w, &repo, num_back, display_mode))
 }
 
 fn parse_limit_arg(m: &ArgMatches) -> Result<usize, Error> {
@@ -192,14 +204,16 @@ fn parse_limit_arg(m: &ArgMatches) -> Result<usize, Error> {
 fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let limit = parse_limit_arg(m)?;
     let config = Config::load();
-    let r = LogRepository::new(config.repo_dir());
-    let paths = r.tail(limit)?;
-    for (i, logpath) in paths.iter().enumerate() {
-        if i > 0 {
-            write!(w, "\n----------------------\n")?;
+    let repo = LogRepository::new(config.repo_dir());
+    abort_if_not_initialized(w, &repo).and_then(|_| {
+        let paths = repo.tail(limit)?;
+        for (i, logpath) in paths.iter().enumerate() {
+            if i > 0 {
+                write!(w, "\n----------------------\n")?;
+            }
+            let mut f = File::open(logpath.path())?;
+            copy(&mut f, w)?;
         }
-        let mut f = File::open(logpath.path())?;
-        copy(&mut f, w)?;
-    }
-    Ok(())
+        Ok(())
+    })
 }
