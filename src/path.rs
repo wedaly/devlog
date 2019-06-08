@@ -30,7 +30,7 @@ impl LogPath {
         }
     }
 
-    pub fn next(self) -> Result<LogPath, Error> {
+    pub fn next(&self) -> Result<LogPath, Error> {
         let seq_num = self.seq_num + 1;
         if seq_num > MAX_SEQ_NUM {
             Err(Error::LogFileLimitExceeded)
