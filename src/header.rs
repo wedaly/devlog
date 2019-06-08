@@ -12,8 +12,8 @@ You can add tasks below using this format:
 - Use a minus sign (-) for tasks that are blocked.
 
 As you work, you can write your questions, thoughts,
-and and discoveries alongside your tasks.  These will
-be stored in your devlog so you can refer to them later.
+and discoveries alongside your tasks.  These will be
+stored in your devlog so you can refer to them later.
 
 To edit this devlog:
    devlog edit
