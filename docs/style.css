@@ -1,9 +1,19 @@
 body {
+    margin: 0;
+    padding: 0;
+}
+
+main {
     margin: 2em 5em;
+}
+
+footer {
+    margin: 0em 0em 0em 5em;
 }
 
 a {
     color: black;
+    text-decoration: none;
 }
 
 a:hover {
@@ -15,10 +25,11 @@ nav ul {
     list-style-type: none;
     text-align: left;
     margin: 2em 0em;
-    padding: 0;
+    padding: 1em 0em;
+    border-top: 1px solid gray;
 }
 
 nav ul li {
     display: inline;
-    padding-right: 10px;
+    padding-right: 1em;
 }
