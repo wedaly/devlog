@@ -10,10 +10,9 @@ pub struct LogRepository {
 }
 
 impl LogRepository {
-    pub fn new(dir: &Path) -> LogRepository {
-        LogRepository {
-            dir: dir.to_path_buf(),
-        }
+    pub fn new(p: &Path) -> LogRepository {
+        let dir = p.to_path_buf();
+        LogRepository { dir }
     }
 
     pub fn init(&self) -> Result<LogPath, Error> {
@@ -24,6 +23,10 @@ impl LogRepository {
             .open(p.path())?;
         write_header(&mut f, true)?;
         Ok(p)
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.dir
     }
 
     pub fn list(&self) -> Result<Vec<LogPath>, Error> {
