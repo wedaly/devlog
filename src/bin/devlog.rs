@@ -151,7 +151,7 @@ fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     abort_if_not_initialized(w, &repo).and_then(|()| {
         match repo.latest()? {
             Some(p) => {
-                if prompt_confirm(w, "Rollover devlog?")? {
+                if prompt_confirm(w, "Rollover incomplete tasks?")? {
                     let (logpath, count) = rollover::rollover(&p)?;
                     write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
                 }
