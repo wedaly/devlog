@@ -20,8 +20,11 @@ To edit this devlog:
 To quickly view tasks:
    devlog status
 
-To rollover incomplete and blocked tasks to a fresh devlog:
+To rollover incomplete tasks to a fresh devlog:
    devlog rollover
+
+To view recent devlogs:
+    devlog tail
 
 Please visit https://devlog-cli.org/ for the full user guide.";
 
