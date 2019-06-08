@@ -37,6 +37,7 @@ const ALL_HOOK_TYPES: &[HookType] = &[
 
 const HOOK_TEMPLATE: &'static str = "#!/usr/bin/env sh
 # To enable this hook, make this file executable.
+echo \"$0 $@\"
 ";
 
 pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
