@@ -114,7 +114,7 @@ fn open_or_create_repo<W: Write>(
     }
 
     if !dir_path.is_dir() {
-        return Err(Error::InvalidArgError("Repository path is not a directory"));
+        return Err(Error::InvalidArg("Repository path is not a directory"));
     }
 
     Ok((LogRepository::new(dir_path), created))
@@ -160,7 +160,7 @@ fn status_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
         .value_of("back")
         .unwrap()
         .parse::<usize>()
-        .map_err(|_| Error::InvalidArgError("back must be an integer"))?;
+        .map_err(|_| Error::InvalidArg("back must be an integer"))?;
 
     let display_mode = match m.value_of("show") {
         Some("all") => status::DisplayMode::ShowAll,
@@ -181,9 +181,9 @@ fn parse_limit_arg(m: &ArgMatches) -> Result<usize, Error> {
         .value_of("limit")
         .unwrap()
         .parse::<usize>()
-        .map_err(|_| Error::InvalidArgError("limit must be an integer"))?;
+        .map_err(|_| Error::InvalidArg("limit must be an integer"))?;
     if limit < 1 {
-        Err(Error::InvalidArgError("limit must be >= 1"))
+        Err(Error::InvalidArg("limit must be >= 1"))
     } else {
         Ok(limit)
     }

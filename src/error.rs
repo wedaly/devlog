@@ -2,7 +2,7 @@ use std::io::Error as IOError;
 
 #[derive(Debug)]
 pub enum Error {
-    InvalidArgError(&'static str),
+    InvalidArg(&'static str),
     LogFileLimitExceeded,
     IOError(IOError),
 }
