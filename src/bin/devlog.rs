@@ -2,7 +2,7 @@ extern crate clap;
 extern crate devlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use devlog::{editor, rollover, status, Config, Error, LogRepository, TaskStatus};
+use devlog::{editor, hook, rollover, status, Config, Error, LogRepository, TaskStatus};
 use std::fs::File;
 use std::io::{copy, stdin, stdout, Write};
 use std::process::exit;
@@ -112,6 +112,7 @@ fn initialize_if_necessary<W: Write>(w: &mut W, repo: &LogRepository) -> Result<
         let msg = format!("Initialize devlog repository at {:?}?", repo.path());
         if prompt_confirm(w, &msg)? {
             repo.init()?;
+            hook::init_hooks(repo.path())?;
         } else {
             exit(0);
         }
@@ -152,7 +153,7 @@ fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
         match repo.latest()? {
             Some(p) => {
                 if prompt_confirm(w, "Rollover incomplete tasks?")? {
-                    let (logpath, count) = rollover::rollover(&p)?;
+                    let (logpath, count) = rollover::rollover(w, &config, &p)?;
                     write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
                 }
                 Ok(())

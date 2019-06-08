@@ -128,26 +128,29 @@ impl GroupedTasks {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rollover::rollover;
     use crate::task::Task;
     use std::fs::OpenOptions;
     use std::path::Path;
     use std::str;
     use tempfile::tempdir;
 
-    fn init_repo_with_tasks(dir_path: &Path, tasks: &[Task]) -> LogRepository {
-        let repo = LogRepository::new(dir_path);
-        let logpath = repo.init().unwrap();
+    fn write_tasks_to_file(p: &Path, tasks: &[Task]) {
         let mut f = OpenOptions::new()
             .write(true)
+            .create(true)
             .truncate(true)
-            .open(logpath.path())
+            .open(p)
             .unwrap();
 
         for t in tasks {
             write!(&mut f, "{}\n", t).unwrap();
         }
+    }
 
+    fn init_repo_with_tasks(dir_path: &Path, tasks: &[Task]) -> LogRepository {
+        let repo = LogRepository::new(dir_path);
+        let logpath = repo.init().unwrap();
+        write_tasks_to_file(logpath.path(), tasks);
         repo
     }
 
@@ -412,9 +415,10 @@ mod tests {
             ],
         );
 
-        // rollover creates a new devlog file with only the "todo" task
+        // Create a new devlog file with only the "todo" task
         let p = repo.latest().unwrap().unwrap();
-        rollover(&p).unwrap();
+        let next = p.next().unwrap();
+        write_tasks_to_file(&next.path(), &[Task::new(TaskStatus::ToDo, "Bar")]);
 
         // check before the first logfile
         check_status(&repo, 2, DisplayMode::ShowAll, "");

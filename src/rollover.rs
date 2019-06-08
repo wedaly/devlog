@@ -1,30 +1,38 @@
+use crate::config::Config;
 use crate::error::Error;
 use crate::file::LogFile;
 use crate::header::write_header;
+use crate::hook::{execute_hook, HookType};
 use crate::path::LogPath;
 use crate::task::{Task, TaskStatus};
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::path::Path;
 
-pub fn rollover(p: &LogPath) -> Result<(LogPath, usize), Error> {
-    let tasks = load_carryover_tasks(p)?;
+pub fn rollover<W: Write>(
+    w: &mut W,
+    config: &Config,
+    p: &LogPath,
+) -> Result<(LogPath, usize), Error> {
+    let path = p.path();
     let next = p.next()?;
-    let mut f = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(next.path())?;
+    let next_path = next.path();
 
-    write_header(&mut f, false)?;
-
-    for t in tasks.iter() {
-        write!(f, "{}\n", t)?;
-    }
+    execute_hook(w, config, &HookType::BeforeRollover, &[path.as_os_str()])?;
+    let tasks = load_carryover_tasks(path)?;
+    create_new_logfile(&next_path, &tasks)?;
+    execute_hook(
+        w,
+        config,
+        &HookType::AfterRollover,
+        &[path.as_os_str(), next_path.as_os_str()],
+    )?;
 
     Ok((next, tasks.len()))
 }
 
-fn load_carryover_tasks(p: &LogPath) -> Result<Vec<Task>, Error> {
-    let prev = LogFile::load(p.path())?;
+fn load_carryover_tasks(path: &Path) -> Result<Vec<Task>, Error> {
+    let prev = LogFile::load(path)?;
     let mut tasks = Vec::new();
     prev.tasks().iter().for_each(|t| {
         if let TaskStatus::ToDo | TaskStatus::Started | TaskStatus::Blocked = t.status() {
@@ -32,6 +40,21 @@ fn load_carryover_tasks(p: &LogPath) -> Result<Vec<Task>, Error> {
         }
     });
     Ok(tasks)
+}
+
+fn create_new_logfile(next_path: &Path, tasks: &[Task]) -> Result<(), Error> {
+    let mut f = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(next_path)?;
+
+    write_header(&mut f, false)?;
+
+    for t in tasks {
+        write!(f, "{}\n", t)?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -42,8 +65,10 @@ mod tests {
 
     #[test]
     fn test_rollover() {
+        let mut out = Vec::new();
         let dir = tempdir().unwrap();
         let repo = LogRepository::new(dir.path());
+        let config = Config::new(dir.path(), "");
 
         // Initialize the repository, which creates a single
         // logfile with three example tasks.
@@ -52,7 +77,7 @@ mod tests {
 
         // Rollover, then check that only todo/started/blocked tasks
         // were imported into the new logfile
-        let (new_logpath, num_imported) = rollover(&first_logpath).unwrap();
+        let (new_logpath, num_imported) = rollover(&mut out, &config, &first_logpath).unwrap();
         assert_eq!(num_imported, 3);
 
         // Check tasks in the new logfile

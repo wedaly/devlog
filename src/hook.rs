@@ -1,4 +1,6 @@
+use crate::config::Config;
 use crate::error::Error;
+use std::ffi::OsStr;
 use std::fs::{create_dir_all, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
@@ -12,19 +14,15 @@ pub enum HookType {
     AfterEdit,
     BeforeRollover,
     AfterRollover,
-    ShowStatus,
-    ShowTail,
 }
 
 impl HookType {
-    pub fn filename(&self) -> String {
+    pub fn name(&self) -> String {
         match self {
             HookType::BeforeEdit => "before-edit",
             HookType::AfterEdit => "after-edit",
             HookType::BeforeRollover => "before-rollover",
             HookType::AfterRollover => "after-rollover",
-            HookType::ShowStatus => "show-status",
-            HookType::ShowTail => "show-tail",
         }
         .to_string()
     }
@@ -35,8 +33,6 @@ const ALL_HOOK_TYPES: &[HookType] = &[
     HookType::AfterEdit,
     HookType::BeforeRollover,
     HookType::AfterRollover,
-    HookType::ShowStatus,
-    HookType::ShowTail,
 ];
 
 const HOOK_TEMPLATE: &'static str = "#!/usr/bin/env sh
@@ -48,9 +44,10 @@ pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
     create_dir_all(&hook_dir)?;
     for hook_type in ALL_HOOK_TYPES {
         let mut p = hook_dir.clone();
-        p.push(hook_type.filename());
+        p.push(hook_type.name());
         let mut f = OpenOptions::new()
             .create(true)
+            .truncate(true)
             .write(true)
             .open(&p)
             .unwrap();
@@ -59,9 +56,26 @@ pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn hook_cmd(repo_dir: &Path, hook_type: &HookType) -> Result<Option<Command>, Error> {
+pub fn execute_hook<W: Write>(
+    w: &mut W,
+    config: &Config,
+    hook_type: &HookType,
+    args: &[&OsStr],
+) -> Result<(), Error> {
+    if let Some(mut cmd) = hook_cmd(config.repo_dir(), hook_type)? {
+        let status = cmd.args(args).status()?;
+        if !status.success() {
+            if let Some(code) = status.code() {
+                write!(w, "{} hook exited with status {}\n", hook_type.name(), code)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn hook_cmd(repo_dir: &Path, hook_type: &HookType) -> Result<Option<Command>, Error> {
     let mut p = hook_dir_path(repo_dir);
-    p.push(hook_type.filename());
+    p.push(hook_type.name());
     is_valid(&p).map(|valid| if valid { Some(Command::new(&p)) } else { None })
 }
 
@@ -100,7 +114,7 @@ mod tests {
     fn create_hook_file(repo_dir: &Path, hook_type: HookType, executable: bool) {
         let mut p = repo_dir.to_path_buf();
         p.push(HOOK_DIR_NAME);
-        p.push(hook_type.filename());
+        p.push(hook_type.name());
 
         let mut f = OpenOptions::new()
             .create(true)
@@ -129,7 +143,7 @@ mod tests {
         for hook_type in ALL_HOOK_TYPES {
             let mut p = repo_dir.path().to_path_buf();
             p.push(HOOK_DIR_NAME);
-            p.push(hook_type.filename());
+            p.push(hook_type.name());
             set_permissions(&p, Permissions::from_mode(0o555)).unwrap()
         }
 

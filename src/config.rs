@@ -13,6 +13,13 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn new(repo_dir: &Path, editor_prog: &str) -> Config {
+        Config {
+            repo_dir: repo_dir.to_path_buf(),
+            editor_prog: editor_prog.to_string(),
+        }
+    }
+
     pub fn load() -> Config {
         let repo_dir_str = env::var(DEVLOG_HOME_ENV_VAR)
             .ok()
