@@ -7,6 +7,10 @@ main {
     margin: 1em 3em;
 }
 
+section {
+    margin: 2em 0em 4em 0em;
+}
+
 video {
    width: 100%;
    max-width: 735px;
@@ -14,13 +18,9 @@ video {
    max-height: 342px;
 }
 
-footer {
-    margin: 0em 0em 0em 3em;
-}
-
 a {
     color: black;
-    text-decoration: none;
+    text-decoration: underline;
 }
 
 a:hover {
@@ -28,7 +28,36 @@ a:hover {
     text-decoration: none;
 }
 
-nav ul {
+table {
+    border-collapse: collapse;
+    margin: 2em 2em;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    text-align: justify;
+    margin: 1em 1em 1em 2em;
+}
+
+footer {
+    margin: 0em 0em 0em 3em;
+}
+
+footer nav ul {
     list-style-type: none;
     text-align: left;
     margin: 2em 0em;
@@ -36,7 +65,7 @@ nav ul {
     border-top: 1px solid gray;
 }
 
-nav ul li {
+footer nav ul li {
     display: inline;
     padding-right: 1em;
 }

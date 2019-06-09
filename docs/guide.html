@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <link rel="shortcut icon" href="#">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>devlog: user guide</title>
+    </head>
+    <body>
+        <main>
+            <h1>devlog: user guide</h1>
+
+            <section id="about">
+                <h2>about</h2>
+
+                <p>Your work is more than a series of tasks (although, of course, you <i>do</i> have those).  Sometimes the way forward is uncertain &mdash; you'll ask questions, prototype, clarify.  As you do, you'll come to understand the problem deeply.  You'll craft an elegant solution, maybe different from the one you thought initially.  That's the challenge and the joy of building software.  Devlog is a command-line tool designed for <i>this</i> kind of work.</p>
+
+                <p>It is <i>not</i> a project management tool, a bug tracker, a wiki, or a scrum board.  Those are great when you need to coordinate, less so for your personal workflow.  They add friction to every change, although change is inevitable.  Rather than support your process, they constrain it.</p>
+
+                <p>Devlog is different.  It gives <i>you</i> a space to prioritize tasks, pose questions, and realize solutions.  It adapts to change, allowing you to effortlessly update tasks as your understanding evolves.  And it is extensible enough to fit into <i>your</i> workflow, whatever that may be.</p>
+
+                <p>I hope you find it useful.</p>
+
+            </section>
+
+            <section id="install">
+                <h2>install</h2>
+                <p>See <a href="install.html">the installation guide</a>.</p>
+            </section>
+
+            <section id="create">
+                <h2>create</h2>
+                <p>To create a new repository for your devlogs:</p>
+                <pre>devlog init</pre>
+                <p>By default, devlogs are stored in the directory at <code>$HOME/devlogs</code>.  You can choose a different directory by setting the <code>DEVLOG_HOME</code> environment variable.</p>
+                <p>Examining the repository directory, you'll see a file called <code>000000001.devlog</code>.  This is your first devlog entry.  It's just a text file.</p>
+            </section>
+
+            <section id="edit">
+                <h2>edit</h2>
+                <p>To open the most recent devlog file:</p>
+                <pre>devlog edit</pre>
+                <p>The default editor is <code>nano</code>.  You can choose a different editor by setting the <code>DEVLOG_EDITOR</code> environment variable.  For example:</p>
+                <pre>export DEVLOG_EDITOR=vim</pre>
+                <p>Your first devlog entry has already been created.  Open it, and you'll see something like:</p>
+
+<pre>2019-06-15
+
+Welcome to your devlog!
+
+You can add tasks below using this format:
+* Use an asterisk (*) for each task you want to complete today.
+^ Use a caret symbol (^) for each task that's in progress.
++ Use a plus sign (+) for tasks you completed
+- Use a minus sign (-) for tasks that are blocked.
+
+As you work, you can write your questions, thoughts,
+and discoveries alongside your tasks.  These will be
+stored in your devlog so you can refer to them later.</pre>
+
+                <p>As you can see, devlog provides a simple way to record tasks.  Any line that starts with a <code>*</code>, <code>^</code>, <code>+</code>, or <code>-</code> is a task.  But your devlog is also a place for free-form thoughts.  For example:</p>
+
+<pre>
+2019-06-15
+
+^ Add method `bar` to class `foo`
+    The class is in `lib/utils.rs`.
+    The new method is a simple data transformation, so testing should be easy...
+    I wonder if I can deprecate method `oldbar` once this is merged?
+
+^ Update library `baz` to version 1.2.3
+    Opened the PR, waiting on review.
+
++ Enable feature flag for cache optimization
+    Done!  Checked the system this morning, performance is much better.
+</pre>
+
+                <p>As you work, you may realize that some tasks are unnecessary, or maybe you need to add more.  That's normal!  Just make the changes and keep going.</p>
+            </section>
+
+            <section id="view">
+                <h2>view</h2>
+                <p>Sometimes, you will want a quick overview of your tasks.  "What was I working on before that meeting?  What did I need code-reviewed?"  To see your current tasks grouped by status:</p>
+                <pre>devlog status</pre>
+                <p>Other times, you will want to see your full devlog entries.  "What was the name of that file with the LRU caching logic?  What was the name of the branch that added the feature flag?"  To see recent devlog entries:</p>
+                <pre>devlog tail</pre>
+            </section>
+
+            <section id="rollover">
+                <h2>rollover</h2>
+                <p>Over time, your devlog will fill with old tasks and notes.  This can be overwhelming.  To stay focused on what's important <i>now</i>, you will occasionally run:</p>
+                <pre>devlog rollover</pre>
+                <p>This copies incomplete tasks to a new devlog file.  You can do this at the end of the day, to prepare your work for the next day.  Or, if you prefer, you can do it at the start of the next day, so you can review your notes from the day before.</p>
+                <p>Your previous devlog entry still exists!  You can always view older entries using <code>devlog tail</code>.</p>
+            </section>
+
+            <section id="extend">
+                <h2>extend</h2>
+                <h3>shell scripts</h3>
+                <p>Devlog is designed to be <a href="http://doc.cat-v.org/unix/pipes/">coupled like garden hose</a> with other command-line tools.  This allows you to customize it to your workflow.</p>
+
+                <p>For example, on many teams you will send a daily "standup" status report to a Slack channel.  Suppose you want to report tasks you completed yesterday, tasks you are working on today, and blocked tasks.  A simple shell script suffices:</p>
+                <pre>#!/usr/bin/env sh
+echo "Yesterday:"
+devlog status -b 1 -s done  # completed in yesterday's entry
+devlog status -s done       # completed in today's entry
+
+echo "Today":
+devlog status -s todo       # todo in today's entry
+
+echo "Blocked:"
+devlog status -s blocked    # blocked in today's entry
+</pre>
+
+                <p>As another example, suppose you'd like the status report to automatically highlight tasks by status.  If you are using vim and have <a href="install.html#vim">installed the devlog syntax</a>, then you can simply pipe the status output to vim:</p>
+                <pre>devlog status | vim -R -c 'set filetype=devlog' -</pre>
+                <p>That's a lot to type, so you probably want to define an alias in your <code>.bashrc</code> or <code>.zshrc</code> configuration:</p>
+                <pre>alias dls="devlog status | vim -R -c 'set filetype=devlog' -"</pre>
+
+
+                <h3>hooks</h3>
+                <p>Devlog can be extended through a mechanism called "hooks".  A <i>hook</i> is an executable file located in the <code>$DEVLOG_HOME/hooks</code> directory.  To enable a hook, make the file executable, like this:</p>
+                <pre>chmod +x $DEVLOG_HOME/hooks/before-edit</pre>
+
+                <p>The following hooks are available:</p>
+                <table>
+                    <tr>
+                        <th>Hook</th>
+                        <th class="nowrap">Invoked By</th>
+                        <th>When</th>
+                        <th>Arguments</th>
+                    </tr>
+                    <tr>
+                        <td class="nowrap"><code>before-edit</code></td>
+                        <td class="nowrap"><code>devlog edit</code></td>
+                        <td>Before opening the most recent devlog file in the editor.</td>
+                        <td>Absolute path of the devlog file.</td>
+                    </tr>
+                    <tr>
+                        <td><code class="nowrap">after-edit</code></td>
+                        <td><code class="nowrap">devlog edit</code></td>
+                        <td>After the editor program exits with a successful status code.</td>
+                        <td>Absolute path of the devlog file.</td>
+                    </tr>
+                    <tr>
+                        <td><code class="nowrap">before-rollover</code></td>
+                        <td><code class="nowrap">devlog rollover</code></td>
+                        <td>Before creating the new devlog file.</td>
+                        <td>Absolute path of the latest devlog file before rollover occurs.</td>
+                    </tr>
+                    <tr>
+                        <td><code class="nowrap">after-rollover</code></td>
+                        <td><code class="nowrap">devlog rollover</code></td>
+                        <td>After creating the new devlog file.</td>
+                        <td>The first argument is the absolute path of the old devlog file; the second argument is the absolute path of the newly-created devlog file.</td>
+                    </tr>
+                </table>
+
+                <p>Hooks provide a flexible mechanism for integrating devlog with other command line tools.  For example, suppose you want to automatically commit your devlog entries to a git repository.  One way to achieve this:</p>
+                <ol>
+                    <li>Create an <code>after-edit</code> hook to stage the changes in git:
+                    <pre>#!/usr/bin/env sh
+set -e
+repo="$(dirname $(dirname $0))"
+git -C $repo add "$1"</pre>
+
+                    <li>Create an <code>after-rollover</code> hook to commit and push the changes to a remote git repository:
+                    <pre>#!/usr/bin/env sh
+set -e
+repo="$(dirname $(dirname $0))"
+git -C $repo add $1
+git -C $repo add $2
+git -C $repo commit -m "Rollover to $(basename $2)"
+git -C $repo fetch
+git -C $repo rebase origin/master
+git -C $repo push</pre>
+                    </li>
+                </ol>
+
+                One can imagine other possible integrations, such as:
+                <ul>
+                    <li>Automatically synchronizing task status with an external project management tool like JIRA or Trello.</li>
+                    <li>Customizing the format of the devlog file.</li>
+                    <li>Grouping tasks based on tags, using a format that you define.</li>
+                </ul>
+
+                <p>... or anything else that improves your productivity!</p>
+
+                <h3>library</h3>
+
+                <p>Devlog is available as a Rust library.  Using the library, you can access and parse devlog entries.  Please see the <a href="https://docs.rs/devlog">library documentation</a> for details.</p>
+
+            </section>
+
+        </main>
+    </body>
+</html>
