@@ -10,6 +10,7 @@ readme = "README.md"
 keywords = ["task", "todo", "development", "planning", "cli"]
 categories = ["command-line-utilities", "text-processing"]
 license = "MIT License"
+exclude = ["docs/*", "integrations/*"]
 
 [dependencies]
 chrono = "0.4.6"
