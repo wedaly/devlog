@@ -1,3 +1,6 @@
+//! Rollover is an operation that copies incomplete
+//! tasks from the latest devlog entry file to a new devlog entry file.
+
 use crate::config::Config;
 use crate::error::Error;
 use crate::file::LogFile;
@@ -9,6 +12,9 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 
+/// Copies incomplete tasks from the latest devlog entry file
+/// to a new devlog entry file with the next sequence number.
+/// If available, the before-rollover and after-rollover hooks are invoked.
 pub fn rollover<W: Write>(
     w: &mut W,
     config: &Config,

@@ -1,14 +1,18 @@
+//! Load and parse a devlog entry file.
+
 use crate::task::Task;
 use std::fs::File;
 use std::io::Error as IOError;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+/// Represents a devlog entry file.
 pub struct LogFile {
     tasks: Vec<Task>,
 }
 
 impl LogFile {
+    /// Loads and parses the devlog entry file at `path`
     pub fn load(path: &Path) -> Result<LogFile, IOError> {
         let f = File::open(path)?;
         let r = BufReader::new(f);
@@ -21,6 +25,7 @@ impl LogFile {
         Ok(LogFile { tasks })
     }
 
+    /// Returns the tasks contained in the devlog entry file.
     pub fn tasks(&self) -> &[Task] {
         &self.tasks
     }

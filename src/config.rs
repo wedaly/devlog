@@ -1,3 +1,5 @@
+//! Load configuration values from environment variables.
+
 use dirs;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -13,6 +15,8 @@ pub struct Config {
 }
 
 impl Config {
+    /// Create a new configuration object with the specified configuration values.
+    /// This is used mainly for testing.
     pub fn new(repo_dir: &Path, editor_prog: &str) -> Config {
         Config {
             repo_dir: repo_dir.to_path_buf(),
@@ -20,6 +24,8 @@ impl Config {
         }
     }
 
+    /// Load configuration from environment variables,
+    /// providing defaults if the environment variables are not defined.
     pub fn load() -> Config {
         let repo_dir_str = env::var(DEVLOG_HOME_ENV_VAR)
             .ok()
@@ -34,10 +40,14 @@ impl Config {
         }
     }
 
+    /// The directory of the user's devlog repository, which may or may not exist.
+    /// Defaults to "$HOME/devlogs"
     pub fn repo_dir(&self) -> &Path {
         self.repo_dir.as_path()
     }
 
+    /// The text editor program for editing devlog entry files.
+    /// Defaults to "nano".
     pub fn editor_prog(&self) -> &str {
         &self.editor_prog
     }

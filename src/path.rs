@@ -1,9 +1,14 @@
+//! Path to a devlog entry file.
+
 use crate::error::Error;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 
-const MAX_SEQ_NUM: usize = 999_999_999;
-const NUM_DIGITS: usize = 9;
+/// The maximum possible sequence number of a devlog entry file.
+pub const MAX_SEQ_NUM: usize = 999_999_999;
+
+/// The number of digits in a devlog entry filename.
+pub const NUM_DIGITS: usize = 9;
 
 #[derive(Debug, Eq)]
 pub struct LogPath {
@@ -11,13 +16,21 @@ pub struct LogPath {
     seq_num: usize,
 }
 
+/// Devlog entry files are numbered sequentially, starting from one.
+/// Each filename is nine digits with the extension ".devlog"; for example, "000000123.devlog".
+/// This ensures that the devlog files appear in sequential order when sorted alphabetically.
 impl LogPath {
+    /// Create a new path with the specified sequence number, which must be at least one
+    /// and at most `MAX_SEQ_NUM`.
     pub fn new(dir: &Path, seq_num: usize) -> LogPath {
+        assert!(seq_num > 0 && seq_num <= MAX_SEQ_NUM);
         let mut path = dir.to_path_buf();
         path.push(format!("{:09}.devlog", seq_num));
         LogPath { path, seq_num }
     }
 
+    /// Parse the sequence number from a filesystem path.
+    /// Returns `None` if the filename isn't formatted like "000000123.devlog".
     pub fn from_path(path: PathBuf) -> Option<LogPath> {
         let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
         let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
@@ -30,6 +43,9 @@ impl LogPath {
         }
     }
 
+    /// Returns the path for the next entry in the sequence.
+    /// In the unlikely event that the maximum sequence number is reached,
+    /// returns `Error::LogFileLimitExceeded`.
     pub fn next(&self) -> Result<LogPath, Error> {
         let seq_num = self.seq_num + 1;
         if seq_num > MAX_SEQ_NUM {
@@ -44,27 +60,32 @@ impl LogPath {
         }
     }
 
+    /// Returns the sequence number (e.g. "00000123.devlog" would have sequence number 123)
     pub fn seq_num(&self) -> usize {
         self.seq_num
     }
 
+    /// Returns the filesystem path.
     pub fn path(&self) -> &Path {
         &self.path
     }
 }
 
+/// Order by sequence number.
 impl PartialOrd for LogPath {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
+/// Order by sequence number.
 impl Ord for LogPath {
     fn cmp(&self, other: &Self) -> Ordering {
         self.seq_num.cmp(&other.seq_num)
     }
 }
 
+/// Equal if and only if the sequence numbers are equal.
 impl PartialEq for LogPath {
     fn eq(&self, other: &Self) -> bool {
         self.seq_num == other.seq_num

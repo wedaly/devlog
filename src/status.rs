@@ -1,16 +1,24 @@
+//! Report tasks from the most recent devlog entry file,
+//! grouped by task status type.
+
 use crate::error::Error;
 use crate::file::LogFile;
 use crate::repository::LogRepository;
 use crate::task::{Task, TaskStatus};
 use std::io::Write;
 
+/// Controls how tasks are displayed in the status report.
 #[derive(Debug, Copy, Clone)]
 pub enum DisplayMode {
+    /// Show all tasks, grouped by task status.
     ShowAll,
+
+    /// Show only tasks with the specified status.
     ShowOnly(TaskStatus),
 }
 
 impl DisplayMode {
+    /// Whether to show the section names (e.g. "To Do" or "In Progress")
     pub fn show_section_names(&self) -> bool {
         match self {
             DisplayMode::ShowAll => true,
@@ -18,6 +26,7 @@ impl DisplayMode {
         }
     }
 
+    /// Whether to show the specified task status
     pub fn show_status(&self, s: &TaskStatus) -> bool {
         match self {
             DisplayMode::ShowAll => true,
@@ -26,6 +35,7 @@ impl DisplayMode {
     }
 }
 
+/// Prints the status report using the provided writer.
 pub fn print<W: Write>(
     w: &mut W,
     repo: &LogRepository,

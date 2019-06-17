@@ -1,3 +1,5 @@
+//! A devlog repository is a directory containing devlog entry files.
+
 use crate::error::Error;
 use crate::header::write_header;
 use crate::path::LogPath;
@@ -5,20 +7,28 @@ use std::collections::BinaryHeap;
 use std::fs::{create_dir_all, read_dir, OpenOptions};
 use std::path::{Path, PathBuf};
 
+/// Represents a devlog repository
 pub struct LogRepository {
     dir: PathBuf,
 }
 
 impl LogRepository {
+    /// Creates a handle to the devlog repository at the specified path.
+    /// The directory may or may not exist.
     pub fn new(p: &Path) -> LogRepository {
         let dir = p.to_path_buf();
         LogRepository { dir }
     }
 
+    /// Checks if the repository has been initialized.
     pub fn initialized(&self) -> Result<bool, Error> {
         Ok(self.dir.exists() && self.list()?.len() > 0)
     }
 
+    /// Initializes the repository.
+    /// This creates the directory if it does not exist,
+    /// as well as the first devlog entry file with sequence number one.
+    /// Fails with an `IOError` if the first devlog entry already exists.
     pub fn init(&self) -> Result<LogPath, Error> {
         // Ensure the directory exists
         create_dir_all(&self.dir)?;
@@ -34,10 +44,14 @@ impl LogRepository {
         Ok(p)
     }
 
+    /// Returns the path to the repository directory,
+    /// which may or may not exist.
     pub fn path(&self) -> &Path {
         &self.dir
     }
 
+    /// Returns all paths to devlog entry files in the repository.
+    /// The paths are not necessarily ordered.
     pub fn list(&self) -> Result<Vec<LogPath>, Error> {
         let entries = read_dir(&self.dir)?;
         let paths: Vec<LogPath> = entries
@@ -46,6 +60,8 @@ impl LogRepository {
         Ok(paths)
     }
 
+    /// Returns the most recent devlog entry file paths.
+    /// `limit` is the maximum number of paths that may be returned.
     pub fn tail(&self, limit: usize) -> Result<Vec<LogPath>, Error> {
         let mut all = self.list()?;
         let mut heap = BinaryHeap::with_capacity(all.len());
@@ -62,12 +78,18 @@ impl LogRepository {
         return Ok(result);
     }
 
+    /// Returns the most recent devlog entry file path,
+    /// or `None` if the repository has not yet been initialized.
     pub fn latest(&self) -> Result<Option<LogPath>, Error> {
         let mut all = self.list()?;
         let latest = all.drain(..).max();
         Ok(latest)
     }
 
+    /// Returns the "nth" most recent devlog entry file path.
+    /// For example, `n=0` is the most recent entry,
+    /// `n=1` is the second most recent entry,
+    /// and so on.  Returns `None` if the repository has not yet been initialized.
     pub fn nth_from_latest(&self, n: usize) -> Result<Option<LogPath>, Error> {
         if n == 0 {
             self.latest()
@@ -88,7 +110,8 @@ mod tests {
     fn create_files(dir: &Path, count: usize) -> Result<Vec<LogPath>, Error> {
         let mut paths = Vec::new();
         for i in 0..count {
-            let p = LogPath::new(dir, i);
+            let seq = i + 1;
+            let p = LogPath::new(dir, seq);
             let mut f = OpenOptions::new().write(true).create(true).open(p.path())?;
             write!(f, "+ DONE")?;
             paths.push(p);

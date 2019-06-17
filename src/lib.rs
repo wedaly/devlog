@@ -1,3 +1,10 @@
+//! Devlog is a command-line tool for tracking your day-to-day software development work.
+//!
+//! Devlog entries are stored as numbered files in a directory called a repository.
+//! Each entry may contain tasks, which each are assigned a status.
+//!
+//! This library provides a programmatic interface to the functionality of the devlog tool.
+
 pub mod config;
 pub mod editor;
 pub mod error;

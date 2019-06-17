@@ -1,14 +1,25 @@
+//! A task is something the user wants or needs to do.
+
 use std::fmt;
 
+/// Represents the user-assigned status of a task.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TaskStatus {
+    /// The user has not yet started the task.
     ToDo,
+
+    /// The user has started, but not completed, the task.
     Started,
+
+    /// The user cannot complete the task due to external circumstances.
     Blocked,
+
+    /// The user has completed the task.
     Done,
 }
 
 impl TaskStatus {
+    /// Return a human-readable name for the task status.
     pub fn display_name(&self) -> &str {
         match self {
             TaskStatus::ToDo => "To Do",
@@ -19,6 +30,7 @@ impl TaskStatus {
     }
 }
 
+/// A task the user wants or needs to do.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Task {
     status: TaskStatus,
@@ -26,6 +38,7 @@ pub struct Task {
 }
 
 impl Task {
+    /// Create a new task with the specified status and content.
     pub fn new(status: TaskStatus, content: &str) -> Task {
         Task {
             status,
@@ -33,6 +46,11 @@ impl Task {
         }
     }
 
+    /// Parse a task from its string representation.
+    /// A task string always begins with one of four characters:
+    /// "*" means `ToDo`, "^" means `Started`, "+" means `Completed`,
+    /// and "-" means `Blocked`.  The rest of the string, except for trailing whitespace,
+    /// is the content of the task.  Returns `None` if the string is not a valid task.
     pub fn from_string(s: &str) -> Option<Task> {
         let parse_content = |s: &str| s[1..].trim().to_string();
         if s.starts_with("*") {
@@ -60,10 +78,12 @@ impl Task {
         }
     }
 
+    /// Returns the status of the task.
     pub fn status(&self) -> TaskStatus {
         self.status
     }
 
+    /// Returns the content of the task.
     pub fn content(&self) -> &str {
         &self.content
     }

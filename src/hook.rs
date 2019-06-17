@@ -1,3 +1,7 @@
+//! A hook is an executable program called while executing a devlog command.
+//! It allows users to customize devlog for their workflows.
+//! Hooks are located in the `hooks` subdirectory of the devlog repository.
+
 use crate::config::Config;
 use crate::error::Error;
 use std::ffi::OsStr;
@@ -9,14 +13,29 @@ use std::process::Command;
 
 const HOOK_DIR_NAME: &'static str = "hooks";
 
+/// Defines the types of hooks a user can configure.
 pub enum HookType {
+    /// Invoked before opening a devlog entry in a text editor.
+    /// It takes a single argument: the full path to the devlog entry file.
     BeforeEdit,
+
+    /// Invoked after the text editor program exits with status success.
+    /// It takes a single argument: the full path to the devlog entry file.
     AfterEdit,
+
+    /// Invoked before rolling over a devlog entry file.
+    /// It takes a single argument: the full path to the devlog entry file.
     BeforeRollover,
+
+    /// Invoked after rolling over a devlog entry file.
+    /// It takes two arguments: first, the full path to the old devlog entry file;
+    /// second, the full path to the new devlog entry file.
     AfterRollover,
 }
 
 impl HookType {
+    /// Returns the name of the hook.
+    /// This is the same as the hook's filename on disk.
     pub fn name(&self) -> String {
         match self {
             HookType::BeforeEdit => "before-edit",
@@ -40,6 +59,8 @@ const HOOK_TEMPLATE: &'static str = "#!/usr/bin/env sh
 echo \"$0 $@\"
 ";
 
+/// Creates template hook files in the specified repository.
+/// By default, the hook files are non-executable, which means they are disabled.
 pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
     let hook_dir = hook_dir_path(repo_dir);
     create_dir_all(&hook_dir)?;
@@ -57,6 +78,9 @@ pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
     Ok(())
 }
 
+/// Executes a hook command if available.
+/// If no hook is available (e.g. because the hook file is non-executable)
+/// then this is a no-op.
 pub fn execute_hook<W: Write>(
     w: &mut W,
     config: &Config,
@@ -74,7 +98,8 @@ pub fn execute_hook<W: Write>(
     Ok(())
 }
 
-fn hook_cmd(repo_dir: &Path, hook_type: &HookType) -> Result<Option<Command>, Error> {
+/// Retrieves the executable hook command if it exists.
+pub fn hook_cmd(repo_dir: &Path, hook_type: &HookType) -> Result<Option<Command>, Error> {
     let mut p = hook_dir_path(repo_dir);
     p.push(hook_type.name());
     is_valid(&p).map(|valid| if valid { Some(Command::new(&p)) } else { None })
