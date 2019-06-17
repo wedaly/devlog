@@ -9,7 +9,7 @@ homepage = "https://devlog-cli.org"
 readme = "README.md"
 keywords = ["task", "todo", "development", "planning", "cli"]
 categories = ["command-line-utilities", "text-processing"]
-license = "MIT License"
+license = "MIT"
 exclude = ["docs/*", "integrations/*"]
 
 [dependencies]
