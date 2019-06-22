@@ -17,3 +17,6 @@ chrono = "0.4.6"
 clap = "2.33.0"
 dirs = "1.0"
 tempfile = "3"
+
+[badges]
+travis-ci = { repository = "wedaly/devlog" }
