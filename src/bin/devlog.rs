@@ -210,7 +210,7 @@ fn tail_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
         let paths = repo.tail(limit)?;
         for (i, logpath) in paths.iter().enumerate() {
             if i > 0 {
-                write!(w, "\n----------------------\n")?;
+                write!(w, "\n~~~~~~~~~~~~~~~~~~~~~~\n")?;
             }
             let mut f = File::open(logpath.path())?;
             copy(&mut f, w)?;

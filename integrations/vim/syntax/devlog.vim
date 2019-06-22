@@ -13,7 +13,7 @@ syntax match blockedTask "^\-..*"
 syntax match doneTask "^+..*"
 syntax match inlineCodeSnippet "\`[^`]*\`"
 syntax region blockCodeSnippet start="```" end="```"
-syntax match divider "^\-\-\-*"
+syntax match divider "^\~\~\~*"
 
 hi def link taskSymbol Operator
 hi def link startedTask Type
