@@ -1,4 +1,4 @@
-# devlog
+# devlog [![Build Status](https://travis-ci.com/wedaly/devlog.svg?branch=master)](https://travis-ci.com/wedaly/devlog)
 Command line tool for tracking your day-to-day software development work.
 
 * [Website](https://devlog-cli.org)
