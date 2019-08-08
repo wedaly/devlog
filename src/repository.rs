@@ -1,11 +1,37 @@
 //! A devlog repository is a directory containing devlog entry files.
 
 use crate::error::Error;
-use crate::header::write_header;
 use crate::path::LogPath;
 use std::collections::BinaryHeap;
 use std::fs::{create_dir_all, read_dir, OpenOptions};
+use std::io::Write;
 use std::path::{Path, PathBuf};
+
+const HELP_MSG: &'static str = "Welcome to your devlog!
+
+You can add tasks below using this format:
+* Use an asterisk (*) for each task you want to complete today.
+^ Use a caret symbol (^) for each task that's in progress.
++ Use a plus sign (+) for tasks you completed
+- Use a minus sign (-) for tasks that are blocked.
+
+As you work, you can write your questions, thoughts,
+and discoveries alongside your tasks.  These will be
+stored in your devlog so you can refer to them later.
+
+To edit this devlog:
+   devlog edit
+
+To quickly view tasks:
+   devlog status
+
+To rollover incomplete tasks to a fresh devlog:
+   devlog rollover
+
+To view recent devlogs:
+    devlog tail
+
+Please visit https://devlog-cli.org/ for the full user guide.";
 
 /// Represents a devlog repository
 pub struct LogRepository {
@@ -39,7 +65,8 @@ impl LogRepository {
             .write(true)
             .create_new(true)
             .open(p.path())?;
-        write_header(&mut f, true)?;
+
+        write!(&mut f, "{}\n\n", HELP_MSG)?;
 
         Ok(p)
     }

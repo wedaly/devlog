@@ -9,7 +9,6 @@ pub mod config;
 pub mod editor;
 pub mod error;
 pub mod file;
-mod header;
 pub mod hook;
 pub mod path;
 pub mod repository;

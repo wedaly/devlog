@@ -4,7 +4,6 @@
 use crate::config::Config;
 use crate::error::Error;
 use crate::file::LogFile;
-use crate::header::write_header;
 use crate::hook::{execute_hook, HookType};
 use crate::path::LogPath;
 use crate::task::{Task, TaskStatus};
@@ -53,8 +52,6 @@ fn create_new_logfile(next_path: &Path, tasks: &[Task]) -> Result<(), Error> {
         .write(true)
         .create_new(true)
         .open(next_path)?;
-
-    write_header(&mut f, false)?;
 
     for t in tasks {
         write!(f, "{}\n", t)?;
