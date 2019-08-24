@@ -1,5 +1,25 @@
 language: rust
 
+GH_TOKEN: &GH_TOKEN
+  secure: "BfXtnEr/vcMoaybUqSNDoSkD7lpSTteWEC8+lUIRKJXlJjzD9Urk3EJMmtAGLJZV7gG3dZCe6vD2/PQ4BadyEN4Qg+sm8CT/5Zmy5otoat8U4gtSHreY52Qn0oPM24Sa/hXYHCmQSmrFkfDO5bc9SaUBMf0ZUBP1cazZWDIywxF5KsyhCWL1QDebjtar+hvdVI1yNTiSBuCjBSJe2m87/DczZJI7kxofiqgh95Pk5erO35DAsVXtEc4CVUfwnkRQB0Q2xRGQQ0phR/EEy5K6IITahYkCPXmp02AxbXaSOrNh6Qxcl082KDI7IVS16sq5cSyP6opmmqnqKjkeQuN+9Xu+wW+TWRGAn9sRn8dbAqHmh7/5KKIdjDNZzb2YnrZtw8nks9xPNIjEIqV+0S3KHL7+bObJ2T8aBv/oyegmU+qfopgGjQg6svtOlMO2nfaVJrTxA2653+IVuOfctdXRKEgBtXhuvKr/K2fr9mBeW8Dz+ejZd3DsDiVE99CalqPeOCPiimnGAKRjBnEysF3e84CNRQSX0m1Barhrr4S8U2S4BtCzZlAX7XXibfQQOc9h1HAP/LwjcMTc1MS2Mk1UykeoUVjmC5UCF1EYZ85KveTmM4aAb/oT9Zp87zibxXZXVlYaHDwUaABdEMuVxfA2VnX8gm9R4q+d9nNbB63SiXs="
+
+DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
+  before_deploy:
+  - git config --local user.name "Will Daly"
+  - git config --local user.email "will.e.daly@gmail.com"
+  - name="devlog-$TRAVIS_TAG-$TARGET"
+  - mkdir $name
+  - cp target/$TARGET/release/devlog $name/
+  - cp README.md LICENSE $name/
+  - tar czvf $name.tar.gz $name
+  deploy:
+    provider: releases
+    api_key: *GH_TOKEN
+    file: devlog-$TRAVIS_TAG-$TARGET.tar.gz
+    skip_cleanup: true
+    on:
+      tags: true
+
 matrix:
   include:
 
@@ -19,4 +39,5 @@ matrix:
     addons:
       apt:
         packages:
-          - musl-tools
+        - musl-tools
+    <<: *DEPLOY_TO_GITHUB
