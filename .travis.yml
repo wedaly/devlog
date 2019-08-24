@@ -18,6 +18,7 @@ DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
     api_key: *GH_TOKEN
     file: devlog-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
+    name: $TRAVIS_TAG
     on:
       branch: master
       tags: true
