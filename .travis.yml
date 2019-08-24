@@ -1,3 +1,8 @@
 language: rust
-rust:
-  - stable
+
+matrix:
+  include:
+  - name: Tests
+    rust: stable
+    script:
+    - cargo test
