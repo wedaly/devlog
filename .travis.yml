@@ -2,6 +2,7 @@ language: rust
 
 matrix:
   include:
+
   - name: Tests
     rust: stable
     script:
@@ -9,3 +10,13 @@ matrix:
     - rustup component add rustfmt-preview
     - cargo fmt --version
     - cargo fmt --all -- --check
+
+  - name: Linux Binaries
+    rust: stable
+    env: TARGET=x86_64-unknown-linux-musl
+    before_script: rustup target add $TARGET
+    script: cargo build --release --target $TARGET
+    addons:
+      apt:
+        packages:
+          - musl-tools
