@@ -11,7 +11,7 @@ const HELP_MSG: &'static str = "Welcome to your devlog!
 
 You can add tasks below using this format:
 * Use an asterisk (*) for each task you want to complete today.
-^ Use a caret symbol (^) for each task that's in progress.
+^ Use a caret symbol (^) for tasks that are in progress.
 + Use a plus sign (+) for tasks you completed
 - Use a minus sign (-) for tasks that are blocked.
 
