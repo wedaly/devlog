@@ -45,7 +45,7 @@ matrix:
         branch: master
         tags: true
 
-  - name: Linux Binaries
+  - name: Linux Binary
     rust: stable
     env: TARGET=x86_64-unknown-linux-musl
     before_script: rustup target add $TARGET
@@ -54,4 +54,12 @@ matrix:
       apt:
         packages:
         - musl-tools
+    <<: *DEPLOY_TO_GITHUB
+
+  - name: macOS Binary
+    env: MACOSX_DEPLOYMENT_TARGET=10.7 TARGET=x86_64-apple-darwin
+    os: osx
+    rust: stable
+    script: cargo build --release --target $TARGET
+    install: true
     <<: *DEPLOY_TO_GITHUB
