@@ -66,7 +66,7 @@ impl LogRepository {
             .create_new(true)
             .open(p.path())?;
 
-        write!(&mut f, "{}\n\n", HELP_MSG)?;
+        write!(&mut f, "{}\n", HELP_MSG)?;
 
         Ok(p)
     }
