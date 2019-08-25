@@ -16,6 +16,11 @@ const EDIT_INFO: &'static str =
     "Uses the editor program $DEVLOG_EDITOR, which defaults to nano if not set.";
 
 fn main() -> Result<(), Error> {
+    let yes_arg = Arg::with_name("yes")
+        .short("y")
+        .long("yes")
+        .help("Automatically answer \"yes\" in response to all prompts.");
+
     let m = App::new("devlog")
         .about("Track daily development work")
         .after_help(MAIN_INFO)
@@ -23,16 +28,19 @@ fn main() -> Result<(), Error> {
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("init")
-                .about("Initialize a new devlog repository if it does not already exist."),
+                .about("Initialize a new devlog repository if it does not already exist.")
+                .arg(yes_arg.clone()),
         )
         .subcommand(
             SubCommand::with_name("edit")
                 .about("Edit the most recent devlog file")
-                .after_help(EDIT_INFO),
+                .after_help(EDIT_INFO)
+                .arg(yes_arg.clone()),
         )
         .subcommand(
             SubCommand::with_name("rollover")
-                .about("Create new devlog file with incomplete and blocked tasks"),
+                .about("Create new devlog file with incomplete and blocked tasks")
+                .arg(yes_arg.clone()),
         )
         .subcommand(
             SubCommand::with_name("status")
@@ -74,16 +82,20 @@ fn main() -> Result<(), Error> {
 
     let mut w = stdout();
     match m.subcommand() {
-        ("init", Some(_)) => init_cmd(&mut w),
-        ("edit", Some(_)) => edit_cmd(&mut w),
-        ("rollover", Some(_)) => rollover_cmd(&mut w),
+        ("init", Some(m)) => init_cmd(&mut w, m),
+        ("edit", Some(m)) => edit_cmd(&mut w, m),
+        ("rollover", Some(m)) => rollover_cmd(&mut w, m),
         ("status", Some(m)) => status_cmd(&mut w, m),
         ("tail", Some(m)) => tail_cmd(&mut w, m),
         _ => panic!("No subcommand"),
     }
 }
 
-fn prompt_confirm<W: Write>(w: &mut W, msg: &str) -> Result<bool, Error> {
+fn prompt_confirm<W: Write>(w: &mut W, msg: &str, m: &ArgMatches) -> Result<bool, Error> {
+    if m.is_present("yes") {
+        return Ok(true);
+    }
+
     write!(w, "{} [y/n] ", msg)?;
     w.flush()?;
 
@@ -105,12 +117,16 @@ fn abort_if_not_initialized<W: Write>(w: &mut W, repo: &LogRepository) -> Result
     Ok(())
 }
 
-fn initialize_if_necessary<W: Write>(w: &mut W, repo: &LogRepository) -> Result<bool, Error> {
+fn initialize_if_necessary<W: Write>(
+    w: &mut W,
+    repo: &LogRepository,
+    m: &ArgMatches,
+) -> Result<bool, Error> {
     if repo.initialized()? {
         Ok(false)
     } else {
         let msg = format!("Initialize devlog repository at {:?}?", repo.path());
-        if prompt_confirm(w, &msg)? {
+        if prompt_confirm(w, &msg, m)? {
             repo.init()?;
             hook::init_hooks(repo.path())?;
         } else {
@@ -120,10 +136,10 @@ fn initialize_if_necessary<W: Write>(w: &mut W, repo: &LogRepository) -> Result<
     }
 }
 
-fn init_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+fn init_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let config = Config::load();
     let repo = LogRepository::new(config.repo_dir());
-    initialize_if_necessary(w, &repo).and_then(|created| {
+    initialize_if_necessary(w, &repo, m).and_then(|created| {
         if created {
             write!(
                 w,
@@ -136,10 +152,10 @@ fn init_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     })
 }
 
-fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+fn edit_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let config = Config::load();
     let repo = LogRepository::new(config.repo_dir());
-    initialize_if_necessary(w, &repo).and_then(|_| match repo.latest()? {
+    initialize_if_necessary(w, &repo, m).and_then(|_| match repo.latest()? {
         Some(logpath) => editor::open(w, &config, logpath.path()),
         None => {
             // The user already confirmed initialization of the repo,
@@ -150,13 +166,13 @@ fn edit_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     })
 }
 
-fn rollover_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
+fn rollover_cmd<W: Write>(w: &mut W, m: &ArgMatches) -> Result<(), Error> {
     let config = Config::load();
     let repo = LogRepository::new(config.repo_dir());
     abort_if_not_initialized(w, &repo).and_then(|()| {
         match repo.latest()? {
             Some(p) => {
-                if prompt_confirm(w, "Rollover incomplete tasks?")? {
+                if prompt_confirm(w, "Rollover incomplete tasks?", m)? {
                     let (logpath, count) = rollover::rollover(w, &config, &p)?;
                     write!(w, "Imported {} tasks into {:?}\n", count, logpath.path())?;
                 }
