@@ -17,7 +17,7 @@ syntax match divider "^\~\~\~*"
 
 hi def link taskSymbol Operator
 hi def link startedTask Type
-hi def link blockedTask Error
+hi def link blockedTask Special
 hi def link doneTask Identifier
 hi def link inlineCodeSnippet PreProc
 hi def link blockCodeSnippet PreProc
