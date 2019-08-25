@@ -125,7 +125,11 @@ fn init_cmd<W: Write>(w: &mut W) -> Result<(), Error> {
     let repo = LogRepository::new(config.repo_dir());
     initialize_if_necessary(w, &repo).and_then(|created| {
         if created {
-            write!(w, "Success!\n").map_err(From::from)
+            write!(
+                w,
+                "Success!  Now you can open your devlog using `devlog edit`\n",
+            )
+            .map_err(From::from)
         } else {
             write!(w, "Devlog repository already exists at {:?}\n", repo.path()).map_err(From::from)
         }
