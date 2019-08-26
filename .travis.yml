@@ -26,6 +26,10 @@ DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
       branch: master
       tags: true
 
+env:
+    global:
+        - TMPDIR=$TRAVIS_BUILD_DIR
+
 matrix:
   include:
 
