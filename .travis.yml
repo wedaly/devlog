@@ -13,7 +13,6 @@ DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
   - name="devlog-$TRAVIS_TAG-$TARGET"
   - mkdir $name
   - cp target/$TARGET/release/devlog $name/
-  - cp -r integrations $name/
   - cp README.md LICENSE $name/
   - tar czvf $name.tar.gz $name
   deploy:
