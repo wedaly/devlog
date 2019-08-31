@@ -4,7 +4,7 @@ use std::io::Error as IOError;
 
 #[derive(Debug)]
 pub enum Error {
-    /// An invalid argument was passed to the command line app
+    /// An invalid argument was passed to the command-line app
     InvalidArg(&'static str),
 
     /// The repository contains the maximum number of log file entries,
