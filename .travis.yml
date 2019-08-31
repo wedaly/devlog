@@ -61,9 +61,27 @@ matrix:
     <<: *DEPLOY_TO_GITHUB
 
   - name: macOS Binary
+    rust: stable
     env: MACOSX_DEPLOYMENT_TARGET=10.7 TARGET=x86_64-apple-darwin
     os: osx
-    rust: stable
     script: cargo build --release --target $TARGET
     install: true
     <<: *DEPLOY_TO_GITHUB
+
+  - name: Debian Package
+    rust: stable
+    before_script: cargo install cargo-deb
+    addons:
+      apt:
+        packages:
+        - dpkg
+    script: cargo-deb --deb-version ${TRAVIS_TAG:-HEAD}
+    deploy:
+      provider: releases
+      api_key: *GH_TOKEN
+      file: target/debian/devlog-$TRAVIS_TAG_amd64.deb
+      skip_cleanup: true
+      name: $TRAVIS_TAG
+      on:
+        branch: master
+        tags: true

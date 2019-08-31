@@ -20,3 +20,11 @@ tempfile = "3"
 
 [badges]
 travis-ci = { repository = "wedaly/devlog" }
+
+[package.metadata.deb]
+section = "utils"
+extended-description = """\
+devlog is a tool for tracking your day-to-day software development work.
+It is designed to integrate easily with other command-line tools like
+vim and git.
+"""
