@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
         )
         .subcommand(
             SubCommand::with_name("rollover")
-                .about("Create new devlog file with incomplete and blocked tasks")
+                .about("Create new devlog file with incomplete and blocked tasks from the current devlog file")
                 .arg(yes_arg.clone()),
         )
         .subcommand(
