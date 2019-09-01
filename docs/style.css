@@ -42,6 +42,10 @@ th, td {
     text-align: left;
 }
 
+li {
+    margin: 10px 0;
+}
+
 .nowrap {
     white-space: nowrap;
 }
