@@ -10,7 +10,7 @@ use std::process::exit;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 const MAIN_INFO: &'static str =
-    "Devlog files are created in the directory at $DEVLOG_HOME, which defaults to $HOME/devlogs if not set.";
+    "Devlog files are created in the directory at $DEVLOG_REPO, which defaults to $HOME/devlogs if not set.";
 
 const EDIT_INFO: &'static str =
     "Uses the editor program $DEVLOG_EDITOR, which defaults to nano if not set.";

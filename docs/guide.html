@@ -32,7 +32,7 @@
                 <h2>create</h2>
                 <p>To create a new repository for your devlogs:</p>
                 <pre>devlog init</pre>
-                <p>By default, devlogs are stored in the directory at <code>$HOME/devlogs</code>.  You can choose a different directory by setting the <code>DEVLOG_HOME</code> environment variable.</p>
+                <p>By default, devlogs are stored in the directory at <code>$HOME/devlogs</code>.  You can choose a different directory by setting the <code>DEVLOG_REPO</code> environment variable.</p>
                 <p>Examining the repository directory, you'll see a file called <code>000000001.devlog</code>.  This is your first devlog entry.  It's just a text file.</p>
             </section>
 
@@ -116,8 +116,8 @@ devlog status -s blocked    # blocked in today's entry
 
 
                 <h3>hooks</h3>
-                <p>Devlog can be extended through a mechanism called "hooks".  A <i>hook</i> is an executable file located in the <code>$DEVLOG_HOME/hooks</code> directory.  To enable a hook, make the file executable, like this:</p>
-                <pre>chmod +x $DEVLOG_HOME/hooks/before-edit</pre>
+                <p>Devlog can be extended through a mechanism called "hooks".  A <i>hook</i> is an executable file located in the <code>$DEVLOG_REPO/hooks</code> directory.  To enable a hook, make the file executable, like this:</p>
+                <pre>chmod +x $DEVLOG_REPO/hooks/before-edit</pre>
 
                 <p>The following hooks are available:</p>
                 <table>

@@ -4,7 +4,7 @@ use dirs;
 use std::env;
 use std::path::{Path, PathBuf};
 
-const DEVLOG_HOME_ENV_VAR: &'static str = "DEVLOG_HOME";
+const DEVLOG_REPO_ENV_VAR: &'static str = "DEVLOG_REPO";
 const DEFAULT_HOME_DIR: &'static str = "devlogs";
 const EDITOR_ENV_VAR: &'static str = "DEVLOG_EDITOR";
 const DEFAULT_EDITOR: &'static str = "nano";
@@ -27,7 +27,7 @@ impl Config {
     /// Load configuration from environment variables,
     /// providing defaults if the environment variables are not defined.
     pub fn load() -> Config {
-        let repo_dir_str = env::var(DEVLOG_HOME_ENV_VAR)
+        let repo_dir_str = env::var(DEVLOG_REPO_ENV_VAR)
             .ok()
             .unwrap_or_else(default_repo_dir);
         let repo_dir = PathBuf::from(repo_dir_str);
