@@ -78,7 +78,7 @@ matrix:
     deploy:
       provider: releases
       api_key: *GH_TOKEN
-      file: target/debian/devlog-${TRAVIS_TAG}_amd64.deb
+      file: target/debian/devlog_${TRAVIS_TAG}_amd64.deb
       skip_cleanup: true
       name: $TRAVIS_TAG
       on:
