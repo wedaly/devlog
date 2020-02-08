@@ -84,3 +84,23 @@ matrix:
       on:
         branch: master
         tags: true
+
+  - name: RPM Package
+    rust: stable
+    before_script:
+        - cargo install cargo-rpm
+        - sed -i "s/version = \"[^\"]*\"/version = \"${TRAVIS_TAG:-0.0.0}\"/" Cargo.toml
+    addons:
+      apt:
+        packages:
+        - rpm
+    script: cargo build --release && cargo rpm build
+    deploy:
+      provider: releases
+      api_key: *GH_TOKEN
+      file: target/release/rpmbuild/RPMS/x86_64/devlog-${TRAVIS_TAG}-1.x86_64.rpm
+      skip_cleanup: true
+      name: $TRAVIS_TAG
+      on:
+        branch: master
+        tags: true
