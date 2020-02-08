@@ -17,7 +17,7 @@ DEPLOY_TO_GITHUB: &DEPLOY_TO_GITHUB
   - tar czvf $name.tar.gz $name
   deploy:
     provider: releases
-    api_key: *GH_TOKEN
+    token: *GH_TOKEN
     file: devlog-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
     name: $TRAVIS_TAG
@@ -29,7 +29,7 @@ env:
     global:
         - TMPDIR=$TRAVIS_BUILD_DIR
 
-matrix:
+jobs:
   include:
 
   - name: Tests
@@ -77,7 +77,7 @@ matrix:
     script: cargo-deb --deb-version ${TRAVIS_TAG:-HEAD}
     deploy:
       provider: releases
-      api_key: *GH_TOKEN
+      token: *GH_TOKEN
       file: target/debian/devlog_${TRAVIS_TAG}_amd64.deb
       skip_cleanup: true
       name: $TRAVIS_TAG
@@ -97,7 +97,7 @@ matrix:
     script: cargo build --release && cargo rpm build
     deploy:
       provider: releases
-      api_key: *GH_TOKEN
+      token: *GH_TOKEN
       file: target/release/rpmbuild/RPMS/x86_64/devlog-${TRAVIS_TAG}-1.x86_64.rpm
       skip_cleanup: true
       name: $TRAVIS_TAG
