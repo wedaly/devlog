@@ -67,13 +67,16 @@ pub fn init_hooks(repo_dir: &Path) -> Result<(), Error> {
     for hook_type in ALL_HOOK_TYPES {
         let mut p = hook_dir.clone();
         p.push(hook_type.name());
-        let mut f = OpenOptions::new()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open(&p)
-            .unwrap();
-        write!(f, "{}", HOOK_TEMPLATE)?;
+
+        if !p.exists() {
+            let mut f = OpenOptions::new()
+                .create(true)
+                .truncate(true)
+                .write(true)
+                .open(&p)
+                .unwrap();
+            write!(f, "{}", HOOK_TEMPLATE)?;
+        }
     }
     Ok(())
 }
@@ -127,7 +130,8 @@ fn is_executable(p: &Path) -> Result<bool, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{create_dir, set_permissions, Permissions};
+    use std::fs::{create_dir, set_permissions, File, Permissions};
+    use std::io::Read;
     use std::os::unix::fs::PermissionsExt;
     use tempfile::tempdir;
 
@@ -182,6 +186,37 @@ mod tests {
             let status = cmd.status().unwrap();
             assert!(status.success())
         }
+    }
+
+    #[test]
+    fn test_init_hooks_some_already_exist() {
+        let repo_dir = tempdir().unwrap();
+
+        // Manually create an existing hook
+        let mut p = repo_dir.path().to_path_buf();
+        p.push(HOOK_DIR_NAME);
+        create_dir_all(&p).unwrap();
+
+        p.push(HookType::AfterEdit.name());
+        let mut f = File::create(&p).unwrap();
+        write!(f, "existing hook").unwrap();
+
+        // Initialize hooks
+        init_hooks(repo_dir.path()).unwrap();
+
+        // Verify that all hooks exist
+        for hook_type in ALL_HOOK_TYPES {
+            let mut p = repo_dir.path().to_path_buf();
+            p.push(HOOK_DIR_NAME);
+            p.push(hook_type.name());
+            assert!(p.exists());
+        }
+
+        // Verify that the existing hook wasn't modified
+        let mut f = File::open(&p).unwrap();
+        let mut s = String::new();
+        f.read_to_string(&mut s).unwrap();
+        assert_eq!(s, "existing hook");
     }
 
     #[test]
