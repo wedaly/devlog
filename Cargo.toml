@@ -28,6 +28,7 @@ devlog is a tool for tracking your day-to-day software development work.
 It is designed to integrate easily with other command-line tools like
 vim and git.
 """
+depends = "$auto, nano"
 
 [package.metadata.rpm.cargo]
 buildflags = ["--release"]
