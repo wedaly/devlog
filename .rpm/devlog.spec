@@ -13,6 +13,8 @@ URL: https://devlog-cli.org
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
+Requires: nano
+
 %description
 %{summary}
 
