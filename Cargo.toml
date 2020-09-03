@@ -1,6 +1,6 @@
 [package]
 name = "devlog"
-version = "1.0.4"
+version = "1.0.5"
 authors = ["Will Daly"]
 edition = "2018"
 description = "devlog is a command-line tool for tracking your day-to-day software development work."
