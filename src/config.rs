@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 
 const DEVLOG_REPO_ENV_VAR: &'static str = "DEVLOG_REPO";
 const DEFAULT_HOME_DIR: &'static str = "devlogs";
-const EDITOR_ENV_VAR: &'static str = "DEVLOG_EDITOR";
+const DEVLOG_EDITOR_ENV_VAR: &'static str = "DEVLOG_EDITOR";
+const EDITOR_ENV_VAR: &'static str = "EDITOR";
 const DEFAULT_EDITOR: &'static str = "nano";
 
 pub struct Config {
@@ -32,7 +33,10 @@ impl Config {
             .unwrap_or_else(default_repo_dir);
         let repo_dir = PathBuf::from(repo_dir_str);
 
-        let editor_prog = env::var(EDITOR_ENV_VAR).unwrap_or(DEFAULT_EDITOR.to_string());
+        // $DEVLOG_EDITOR > $EDITOR > nano
+        let editor_prog = env::var(DEVLOG_EDITOR_ENV_VAR)
+            .or_else(|_| env::var(EDITOR_ENV_VAR))
+            .unwrap_or_else(|_| DEFAULT_EDITOR.to_string());
 
         Config {
             repo_dir,
