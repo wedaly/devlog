@@ -1,5 +1,6 @@
 language: rust
 os: linux
+dist: focal  # Ubuntu 20.04
 
 GH_TOKEN: &GH_TOKEN
   secure: "ss+ZuvWwEtNztqrdTgnKy/gu5qRpHEaM5S9GhF0JxJPfSGqkWYct4RIUJlKEgrM57i8N0NERayhJj3CtWN3CDKL2wHTtA5cH5H70LZBwkvdOpVTC2+JOw5/9xx1U4o40V1wxkowysC2ty9QTZP3NYJYX3LoUWarpU7TW2tZVejBODe95pZ9g8jj283wrdFl4HyvGY2v2lDGEUHTXnPsSQ1hUYF8L+hbQwkRAPRp7F74hmMB7/wYwnbjbxG+PJLUW75xJErDk95y95zVCVhmpKplK3r5chgTyStFIMfiAyaBi8J+cyEyyFQSWNoJO+/3XIVErGpusYwt1tOrKVfrQHcsQBSAIs0yuc9uSPTYP3gUobNB7kwMGZFdjRWjSOSVp9fTwx+jpasssW+MpfwQKqAk3e9eeMQ0oMUvugvA44iETXGhbQy0CX0b1JptlAmsO2XNwPN8ki3p6IlMNQx1IEbAPk/pEDlztNadhaDoQvUxfJW/C31xyu9GWoprwLUmnlKmDQLAkhZ/jKCY4NePfxiO3z0yMjVUcRXeB1nd8f6twwikJlrz/vi0vp6MLvgAYPkazdL4BCDQbs1BXRzs+G6JyRxgBSNudV2dVPGDgcDHwu9yyNh3zlr+fVuJ6wk8tj3cR/inSrNEXbggRITK+Ry7iWPSuwW3VWwOgDRkjtSs="
@@ -75,6 +76,7 @@ jobs:
       apt:
         packages:
         - dpkg
+        - liblzma-dev
     script: cargo-deb --deb-version ${TRAVIS_TAG:-HEAD}
     deploy:
       provider: releases
