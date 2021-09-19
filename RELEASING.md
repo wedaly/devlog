@@ -3,6 +3,7 @@
 1. Increment the version in `Cargo.toml`, then commit the change:
 ```
 export VERSION=x.y.z
+sed -i "s/version = .*/version = \"$VERSION\"/" Cargo.toml
 git add Cargo.toml
 git commit -m "Bump version to $VERSION"
 git push origin main
