@@ -17,18 +17,3 @@ chrono = "0.4.19"
 clap = "2.33.3"
 dirs = "4.0.0"
 tempfile = "3.2.0"
-
-[package.metadata.deb]
-section = "utils"
-extended-description = """\
-devlog is a tool for tracking your day-to-day software development work.
-It is designed to integrate easily with other command-line tools like
-vim and git.
-"""
-depends = "$auto, nano"
-
-[package.metadata.rpm.cargo]
-buildflags = ["--release"]
-
-[package.metadata.rpm.targets]
-devlog = { path = "/usr/bin/devlog" }
