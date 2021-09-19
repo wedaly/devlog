@@ -4,7 +4,7 @@
 ```
 export VERSION=x.y.z
 sed -i "s/version = .*/version = \"$VERSION\"/" Cargo.toml
-git add Cargo.toml
+git add Cargo.*
 git commit -m "Bump version to $VERSION"
 git push origin main
 ```
