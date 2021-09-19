@@ -12,9 +12,9 @@ git push origin main
 2. Tag the version:
 
 ```
-export RELEASE_TAG=x.y.z
-git tag -s -a $RELEASE_TAG
-git push origin $RELEASE_TAG
+export VERSION=x.y.z
+git tag -s -a $VERSION -m $VERSION
+git push origin $VERSION
 ```
 
 3. Publish to crates.io:
