@@ -27,5 +27,3 @@ cargo publish
 ```
 
 4. Create a new release in the GitHub UI from the tag.  This triggers the "release" GitHub workflow to build and upload the binaries.
-
-5. Update the download links in `docs/install.html`
