@@ -1,3 +1,4 @@
+![Test Status](https://github.com/wedaly/devlog/actions/workflows/test.yml/badge.svg)
 [![Crates Status](https://img.shields.io/crates/v/devlog.svg)](https://crates.io/crates/devlog)
 
 # devlog
