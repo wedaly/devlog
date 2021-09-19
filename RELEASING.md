@@ -28,7 +28,3 @@ cargo publish
 4. Create a new release in the GitHub UI from the tag.  This triggers the "release" GitHub workflow to build and upload the binaries.
 
 5. Update the download links in `docs/install.html`
-
-6. Update the [homebrew formula](https://github.com/wedaly/homebrew-devlog).
-
-7. Update the [devlog package in the AUR](https://aur.archlinux.org/packages/devlog/)
