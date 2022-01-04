@@ -17,7 +17,7 @@ const EDIT_INFO: &'static str =
 
 fn main() -> Result<(), Error> {
     let yes_arg = Arg::with_name("yes")
-        .short("y")
+        .short('y')
         .long("yes")
         .help("Automatically answer \"yes\" in response to all prompts.");
 
@@ -47,7 +47,7 @@ fn main() -> Result<(), Error> {
                 .about("Show recent tasks")
                 .arg(
                     Arg::with_name("show")
-                        .short("s")
+                        .short('s')
                         .long("show")
                         .takes_value(true)
                         .value_name("SHOW")
@@ -57,7 +57,7 @@ fn main() -> Result<(), Error> {
                 )
                 .arg(
                     Arg::with_name("back")
-                        .short("b")
+                        .short('b')
                         .long("back")
                         .takes_value(true)
                         .value_name("BACK")
@@ -70,7 +70,7 @@ fn main() -> Result<(), Error> {
                 .about("Show recent devlogs")
                 .arg(
                     Arg::with_name("limit")
-                        .short("n")
+                        .short('n')
                         .long("limit")
                         .takes_value(true)
                         .value_name("LIMIT")
@@ -82,11 +82,11 @@ fn main() -> Result<(), Error> {
 
     let mut w = stdout();
     match m.subcommand() {
-        ("init", Some(m)) => init_cmd(&mut w, m),
-        ("edit", Some(m)) => edit_cmd(&mut w, m),
-        ("rollover", Some(m)) => rollover_cmd(&mut w, m),
-        ("status", Some(m)) => status_cmd(&mut w, m),
-        ("tail", Some(m)) => tail_cmd(&mut w, m),
+        Some(("init", m)) => init_cmd(&mut w, m),
+        Some(("edit", m)) => edit_cmd(&mut w, m),
+        Some(("rollover", m)) => rollover_cmd(&mut w, m),
+        Some(("status", m)) => status_cmd(&mut w, m),
+        Some(("tail", m)) => tail_cmd(&mut w, m),
         _ => panic!("No subcommand"),
     }
 }
