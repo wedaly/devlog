@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate devlog;
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{App, AppSettings, Arg, ArgMatches};
 use devlog::{editor, hook, rollover, status, Config, Error, LogRepository, TaskStatus};
 use std::fs::File;
 use std::io::{copy, stdin, stdout, Write};
@@ -16,7 +16,7 @@ const EDIT_INFO: &'static str =
     "Uses the editor program $DEVLOG_EDITOR, which defaults to nano if not set.";
 
 fn main() -> Result<(), Error> {
-    let yes_arg = Arg::with_name("yes")
+    let yes_arg = Arg::new("yes")
         .short('y')
         .long("yes")
         .help("Automatically answer \"yes\" in response to all prompts.");
@@ -27,26 +27,26 @@ fn main() -> Result<(), Error> {
         .version(VERSION)
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("init")
+            App::new("init")
                 .about("Initialize a new devlog repository if it does not already exist.")
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            SubCommand::with_name("edit")
+            App::new("edit")
                 .about("Edit the most recent devlog file")
                 .after_help(EDIT_INFO)
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            SubCommand::with_name("rollover")
+            App::new("rollover")
                 .about("Create new devlog file with incomplete and blocked tasks from the current devlog file")
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            SubCommand::with_name("status")
+            App::new("status")
                 .about("Show recent tasks")
                 .arg(
-                    Arg::with_name("show")
+                    Arg::new("show")
                         .short('s')
                         .long("show")
                         .takes_value(true)
@@ -56,7 +56,7 @@ fn main() -> Result<(), Error> {
                         .help("Sections to show"),
                 )
                 .arg(
-                    Arg::with_name("back")
+                    Arg::new("back")
                         .short('b')
                         .long("back")
                         .takes_value(true)
@@ -66,10 +66,10 @@ fn main() -> Result<(), Error> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("tail")
+            App::new("tail")
                 .about("Show recent devlogs")
                 .arg(
-                    Arg::with_name("limit")
+                    Arg::new("limit")
                         .short('n')
                         .long("limit")
                         .takes_value(true)
