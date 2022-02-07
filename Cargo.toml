@@ -14,6 +14,6 @@ exclude = ["docs/*"]
 
 [dependencies]
 chrono = "0.4.19"
-clap = "3.0.13"
+clap = "3.0.14"
 dirs = "4.0.0"
 tempfile = "3.3.0"
