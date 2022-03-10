@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate devlog;
 
-use clap::{App, AppSettings, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use devlog::{editor, hook, rollover, status, Config, Error, LogRepository, TaskStatus};
 use std::fs::File;
 use std::io::{copy, stdin, stdout, Write};
@@ -21,29 +21,29 @@ fn main() -> Result<(), Error> {
         .long("yes")
         .help("Automatically answer \"yes\" in response to all prompts.");
 
-    let m = App::new("devlog")
+    let m = Command::new("devlog")
         .about("Track daily development work")
         .after_help(MAIN_INFO)
         .version(VERSION)
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .subcommand(
-            App::new("init")
+            Command::new("init")
                 .about("Initialize a new devlog repository if it does not already exist.")
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            App::new("edit")
+            Command::new("edit")
                 .about("Edit the most recent devlog file")
                 .after_help(EDIT_INFO)
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            App::new("rollover")
+            Command::new("rollover")
                 .about("Create new devlog file with incomplete and blocked tasks from the current devlog file")
                 .arg(yes_arg.clone()),
         )
         .subcommand(
-            App::new("status")
+            Command::new("status")
                 .about("Show recent tasks")
                 .arg(
                     Arg::new("show")
@@ -66,7 +66,7 @@ fn main() -> Result<(), Error> {
                 ),
         )
         .subcommand(
-            App::new("tail")
+            Command::new("tail")
                 .about("Show recent devlogs")
                 .arg(
                     Arg::new("limit")
