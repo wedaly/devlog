@@ -2,7 +2,7 @@
 name = "devlog"
 version = "1.2.1"
 authors = ["Will Daly"]
-edition = "2018"
+edition = "2021"
 description = "devlog is a command-line tool for tracking your day-to-day software development work."
 repository = "https://github.com/wedaly/devlog"
 homepage = "https://devlog-cli.org"
